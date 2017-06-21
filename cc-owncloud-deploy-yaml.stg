@@ -152,6 +152,8 @@ spec:
         ports:
         - containerPort: 9000
           name: "php"
+        - containerPort: 8873
+          name: "rsync"
         resources:
           limits:
             cpu: <vars.owncloud.limits.cpu>
@@ -161,7 +163,9 @@ spec:
             memory: <vars.owncloud.requests.memory>
         volumeMounts:
         - mountPath: /var/www/html
-          name: owncloud-owncloud-data-host
+          name: owncloud-owncloud-install
+        - mountPath: /data
+          name: owncloud-owncloud-data
       - image: <vars.nginx.image.name>:<vars.nginx.image.version>
         name: nginx
         env:
@@ -179,9 +183,7 @@ spec:
             memory: <vars.nginx.requests.memory>
         volumeMounts:
         - mountPath: /var/www/html
-          name: owncloud-owncloud-data-host
-        - mountPath: /data
-          name: owncloud-owncloud-data-host
+          name: owncloud-owncloud-install
         - mountPath: /nginx-in
           name: nginx-nginx-config
       - image: gcr.io/google_containers/liveness
@@ -196,9 +198,12 @@ spec:
           periodSeconds: 3
       restartPolicy: Always
       volumes:
-      - name: owncloud-owncloud-data-host
-        hostPath:
-          path: /data/owncloud-owncloud-data-host
+      - name: owncloud-owncloud-install
+        persistentVolumeClaim:
+          claimName: owncloud-owncloud-install
+      - name: owncloud-owncloud-data
+        persistentVolumeClaim:
+          claimName: owncloud-owncloud-data
       - name: nginx-nginx-config
         configMap:
           name: nginx
