@@ -7,6 +7,8 @@
 *
 */
 
+delimiters "%", "%"
+
 bb-owncloud-config-yaml(parent, vars) ::= <<
 apiVersion: v1
 kind: ConfigMap
@@ -28,11 +30,11 @@ data:
       'datadirectory' => '/data/data',
       'overwrite.cli.url' => 'https://cloud.muellerpublic.de',
       'dbtype' => 'mysql',
-      'dbname' => '<vars.db.owncloud.db>',
+      'dbname' => '%vars.db.owncloud.db%',
       'dbhost' => 'db:3306',
       'dbtableprefix' => 'oc_',
-      'dbuser' => '<vars.db.owncloud.user>',
-      'dbpassword' => '<vars.db.owncloud.password>',
+      'dbuser' => '%vars.db.owncloud.user%',
+      'dbpassword' => '%vars.db.owncloud.password%',
       'logtimezone' => 'UTC',
       'installed' => false,
       'redis' => 
