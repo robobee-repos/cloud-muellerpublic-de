@@ -1,0 +1,101 @@
+/*
+* Mandatory:
+* 
+* vars.redis.image.name
+* vars.redis.image.version
+* vars.redis.limits.cpu
+* vars.redis.limits.memory
+* vars.redis.requests.cpu
+* vars.redis.requests.memory
+*/
+
+cc-redis-deploy-yaml(parent, vars) ::= <<
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-redis-data
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: redis
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: redis
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - name: "redis"
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: redis
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      tier: backend
+      group: cloud-muellerpublic-de
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: backend
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.redis.image.name>:<vars.redis.image.version>
+        name: redis
+        command: ["redis-server", "--appendonly", "yes"]
+        ports:
+        - containerPort: 6379
+          name: "redis"
+        resources:
+          limits:
+            cpu: <vars.redis.limits.cpu>
+            memory: <vars.redis.limits.memory>
+          requests:
+            cpu: <vars.redis.requests.cpu>
+            memory: <vars.redis.requests.memory>
+        volumeMounts:
+        - mountPath: /data
+          name: redis-redis-data
+      restartPolicy: Always
+      volumes:
+      - name: redis-redis-data
+        persistentVolumeClaim:
+          claimName: redis-redis-data
+
+---
+
+>>
