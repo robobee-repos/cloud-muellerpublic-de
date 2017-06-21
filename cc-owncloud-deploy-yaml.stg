@@ -1,0 +1,208 @@
+/*
+* Mandatory:
+* 
+* vars.owncloud.image.name
+* vars.owncloud.image.version
+* vars.owncloud.php.memoryLimit_MB
+* vars.owncloud.php.maxExecutionTime_s
+* vars.owncloud.php.maxChildren
+* vars.owncloud.php.startServers
+* vars.owncloud.php.minSpareServers
+* vars.owncloud.php.maxSpareServers
+* vars.owncloud.php.opcacheEnable
+* vars.owncloud.php.opcacheEnableCLI
+* vars.owncloud.php.opcacheMemoryConsumption_MB
+* vars.owncloud.limits.cpu
+* vars.owncloud.limits.memory
+* vars.owncloud.requests.cpu
+* vars.owncloud.requests.memory
+* vars.nginx.image.name
+* vars.nginx.image.version
+* vars.nginx.limits.cpu
+* vars.nginx.limits.memory
+* vars.nginx.requests.cpu
+* vars.nginx.requests.memory
+*/
+
+cc-owncloud-deploy-yaml(parent, vars) ::= <<
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: owncloud-owncloud-install
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: owncloud-owncloud-data
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: owncloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - name: "http"
+    port: 9090
+    targetPort: 9090
+  selector:
+    app: owncloud
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: owncloud-php
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - name: "php"
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: owncloud
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: owncloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: owncloud
+      tier: frontend
+      group: cloud-muellerpublic-de
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: owncloud
+        tier: frontend
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.owncloud.image.name>:<vars.owncloud.image.version>
+        name: owncloud
+        env:
+        - name: PHP_MEMORY_LIMIT_MB
+          value: "<vars.owncloud.php.memoryLimit_MB>"
+        - name: PHP_MAX_EXECUTION_TIME
+          value: "<vars.owncloud.php.maxExecutionTime_s>"
+        - name: PHP_FPM_MAX_CHILDREN
+          value: "<vars.owncloud.php.maxChildren>"
+        - name: PHP_FPM_START_SERVERS
+          value: "<vars.owncloud.php.startServers>"
+        - name: PHP_FPM_MIN_SPARE_SERVERS
+          value: "<vars.owncloud.php.minSpareServers>"
+        - name: PHP_FPM_MAX_SPARE_SERVERS
+          value: "<vars.owncloud.php.maxSpareServers>"
+        - name: PHP_OPCACHE_ENABLE
+          value: "<vars.owncloud.php.opcacheEnable>"
+        - name: PHP_OPCACHE_ENABLE_CLI
+          value: "<vars.owncloud.php.opcacheEnableCLI>"
+        - name: PHP_OPCACHE_MEMORY_CONSUMPTION_MB
+          value: "<vars.owncloud.php.opcacheMemoryConsumption_MB>"
+        ports:
+        - containerPort: 9000
+          name: "php"
+        resources:
+          limits:
+            cpu: <vars.owncloud.limits.cpu>
+            memory: <vars.owncloud.limits.memory>
+          requests:
+            cpu: <vars.owncloud.requests.cpu>
+            memory: <vars.owncloud.requests.memory>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: owncloud-owncloud-data-host
+      - image: <vars.nginx.image.name>:<vars.nginx.image.version>
+        name: nginx
+        env:
+        - name: NGINX_HTTP_PORT
+          value: "9090"
+        ports:
+        - containerPort: 9090
+          name: "http"
+        resources:
+          limits:
+            cpu: <vars.nginx.limits.cpu>
+            memory: <vars.nginx.limits.memory>
+          requests:
+            cpu: <vars.nginx.requests.cpu>
+            memory: <vars.nginx.requests.memory>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: owncloud-owncloud-data-host
+        - mountPath: /data
+          name: owncloud-owncloud-data-host
+        - mountPath: /nginx-in
+          name: nginx-nginx-config
+      - image: gcr.io/google_containers/liveness
+        name: liveness
+        args:
+        - /server
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9090
+          initialDelaySeconds: 3
+          periodSeconds: 3
+      restartPolicy: Always
+      volumes:
+      - name: owncloud-owncloud-data-host
+        hostPath:
+          path: /data/owncloud-owncloud-data-host
+      - name: nginx-nginx-config
+        configMap:
+          name: nginx
+
+---
+
+>>

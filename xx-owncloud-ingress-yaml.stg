@@ -1,0 +1,32 @@
+/*
+*
+*/
+xx-owncloud-ingress-yaml(parent, vars) ::= <<
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: owncloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/tls-acme: "true"
+    ingress.kubernetes.io/affinity: "cookie"
+spec:
+  tls:
+  - hosts:
+    - cloud.muellerpublic.de
+    secretName: tls-secret
+  rules:
+  - host: cloud.muellerpublic.de
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: owncloud
+          servicePort: 9090
+
+>>
