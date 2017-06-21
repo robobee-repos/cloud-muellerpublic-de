@@ -1,0 +1,48 @@
+/*
+* Mandatory:
+* 
+* vars.db.owncloud.db
+* vars.db.owncloud.user
+* vars.db.owncloud.password
+*
+*/
+
+bb-owncloud-config-yaml(parent, vars) ::= <<
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: owncloud-config
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: owncloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+data:
+  config.php: |
+    <?php
+    $CONFIG = array (
+      'trusted_domains' => 
+      array (
+        0 => 'cloud.muellerpublic.de',
+      ),
+      'datadirectory' => '/data/data',
+      'overwrite.cli.url' => 'https://cloud.muellerpublic.de',
+      'dbtype' => 'mysql',
+      'dbname' => '<vars.db.owncloud.db>',
+      'dbhost' => 'db:3306',
+      'dbtableprefix' => 'oc_',
+      'dbuser' => '<vars.db.owncloud.user>',
+      'dbpassword' => '<vars.db.owncloud.password>',
+      'logtimezone' => 'UTC',
+      'installed' => false,
+      'redis' => 
+      array (
+        'host' => 'redis',
+        'port' => '6379',
+      ),
+      'memcache.local' => '\\OC\\Memcache\\Redis',
+      'memcache.locking' => '\\OC\\Memcache\\Redis',
+      'memcache.distributed' => '\\OC\\Memcache\\Redis',
+    );
+
+>>
