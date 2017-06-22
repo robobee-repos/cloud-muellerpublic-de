@@ -149,6 +149,21 @@ spec:
           value: "<vars.owncloud.php.opcacheEnableCLI>"
         - name: PHP_OPCACHE_MEMORY_CONSUMPTION_MB
           value: "<vars.owncloud.php.opcacheMemoryConsumption_MB>"
+        - name: DB_OWNCLOUD_DB
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_db
+        - name: DB_OWNCLOUD_USER
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_user
+        - name: DB_OWNCLOUD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_password
         ports:
         - containerPort: 9000
           name: "php"
