@@ -166,8 +166,6 @@ spec:
           name: owncloud-owncloud-install
         - mountPath: /data
           name: owncloud-owncloud-data
-        - mountPath: /owncloud-in
-          name: owncloud-config
       - image: <vars.nginx.image.name>:<vars.nginx.image.version>
         name: nginx
         env:
@@ -209,9 +207,6 @@ spec:
       - name: nginx-nginx-config
         configMap:
           name: nginx
-      - name: owncloud-config
-        configMap:
-          name: owncloud-config
 
 ---
 
