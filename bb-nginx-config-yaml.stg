@@ -20,7 +20,6 @@ metadata:
     group: cloud-muellerpublic-de
 data:
   nginx.conf: |
-    #user  nginx;
     worker_processes  <vars.nginx.workerProcesses>;
     error_log  /var/log/nginx/error.log warn;
     pid        /var/run/nginx.pid;

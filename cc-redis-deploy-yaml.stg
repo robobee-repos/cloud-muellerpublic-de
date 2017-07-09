@@ -9,6 +9,8 @@
 * vars.redis.requests.memory
 */
 
+import "affinities.stg"
+
 cc-redis-deploy-yaml(parent, vars) ::= <<
 
 ---
@@ -95,6 +97,7 @@ spec:
       - name: redis-redis-data
         persistentVolumeClaim:
           claimName: redis-redis-data
+<affinitiesGroup(parent, vars)>
 
 ---
 

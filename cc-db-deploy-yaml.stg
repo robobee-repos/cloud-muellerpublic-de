@@ -7,6 +7,8 @@
 * vars.db.requests.memory
 */
 
+import "affinities.stg"
+
 cc-db-deploy-yaml(parent, vars) ::= <<
 
 ---
@@ -120,6 +122,7 @@ spec:
       - name: mariadb-mariadb-data
         persistentVolumeClaim:
           claimName: mariadb-mariadb-data
+<affinitiesGroup(parent, vars)>
 
 ---
 
