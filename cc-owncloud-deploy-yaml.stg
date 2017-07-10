@@ -191,6 +191,12 @@ spec:
         ports:
         - containerPort: 9090
           name: "http"
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9090
+          initialDelaySeconds: 60
+          periodSeconds: 3
         resources:
           limits:
             cpu: <vars.nginx.limits.cpu>
@@ -203,16 +209,6 @@ spec:
           name: owncloud-owncloud-install
         - mountPath: /nginx-in
           name: nginx-nginx-config
-      - image: gcr.io/google_containers/liveness
-        name: liveness
-        args:
-        - /server
-        livenessProbe:
-          httpGet:
-            path: /ping
-            port: 9090
-          initialDelaySeconds: 60
-          periodSeconds: 3
       restartPolicy: Always
       volumes:
       - name: owncloud-owncloud-install
