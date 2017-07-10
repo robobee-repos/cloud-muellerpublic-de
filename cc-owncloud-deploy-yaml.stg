@@ -78,8 +78,8 @@ metadata:
 spec:
   ports:
   - name: "http"
-    port: 9090
-    targetPort: 9090
+    port: 8080
+    targetPort: 8080
   selector:
     app: owncloud
 
@@ -169,8 +169,6 @@ spec:
         ports:
         - containerPort: 9000
           name: "php"
-        - containerPort: 8873
-          name: "rsync"
         resources:
           limits:
             cpu: <vars.owncloud.limits.cpu>
@@ -187,16 +185,16 @@ spec:
         name: nginx
         env:
         - name: NGINX_HTTP_PORT
-          value: "9090"
+          value: "8080"
         ports:
-        - containerPort: 9090
+        - containerPort: 8080
           name: "http"
         livenessProbe:
           httpGet:
             path: /ping
-            port: 9090
+            port: 8080
           initialDelaySeconds: 60
-          periodSeconds: 3
+          periodSeconds: 10
         resources:
           limits:
             cpu: <vars.nginx.limits.cpu>
