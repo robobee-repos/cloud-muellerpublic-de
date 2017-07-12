@@ -1,0 +1,11 @@
+readinessProbe(parent, vars) ::= <<
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - MYSQL_PWD=\"$MARIADB_PASSWORD\" mysql -h 127.0.0.1 -u $MARIADB_USER -D $MARIADB_DATABASE -e 'SELECT 1'
+          timeoutSeconds: 10
+          initialDelaySeconds: 30
+>>
