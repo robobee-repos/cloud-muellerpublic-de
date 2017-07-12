@@ -24,7 +24,7 @@ metadata:
     app: owncloud
     group: cloud-muellerpublic-de
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
