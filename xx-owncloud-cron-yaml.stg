@@ -25,6 +25,7 @@ metadata:
     group: cloud-muellerpublic-de
 spec:
   schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -33,9 +34,9 @@ spec:
           - image: <vars.owncloud.image.name>:<vars.owncloud.image.version>
             name: owncloud
             args:
-            - /usr/bin/php
+            - php
             - -f
-            - /cron.php
+            - cron.php
             env:
             - name: PHP_MEMORY_LIMIT_MB
               value: "<vars.owncloud.php.memoryLimit_MB>"
