@@ -41,8 +41,8 @@ data:
         client_max_body_size <vars.nginx.clientMaxBodySize>;
 <rest(vars.nginx.hosts):redirectHost(parent, vars);separator="\n">
         server {
-            listen 9090 default_server;
-            listen [::]:9090 default_server;
+            listen 8080 default_server;
+            listen [::]:8080 default_server;
             root /var/www/html;
             server_name <first(vars.nginx.hosts)>;
             index index.php;
