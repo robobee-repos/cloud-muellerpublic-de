@@ -1,34 +1,28 @@
 /*
-* Mandatory:
-* 
-* vars.owncloud.image.name
-* vars.owncloud.image.version
-* vars.owncloud.php.memoryLimit_MB
-* vars.owncloud.php.maxExecutionTime_s
-* vars.owncloud.php.maxChildren
-* vars.owncloud.php.startServers
-* vars.owncloud.php.minSpareServers
-* vars.owncloud.php.maxSpareServers
-* vars.owncloud.php.opcacheEnable
-* vars.owncloud.php.opcacheEnableCLI
-* vars.owncloud.php.opcacheMemoryConsumption_MB
-* vars.owncloud.limits.cpu
-* vars.owncloud.limits.memory
-* vars.owncloud.requests.cpu
-* vars.owncloud.requests.memory
-* vars.nginx.image.name
-* vars.nginx.image.version
-* vars.nginx.limits.cpu
-* vars.nginx.limits.memory
-* vars.nginx.requests.cpu
-* vars.nginx.requests.memory
-* vars.rsync.image.name
-* vars.rsync.image.version
-* vars.rsync.limits.cpu
-* vars.rsync.limits.memory
-* vars.rsync.requests.cpu
-* vars.rsync.requests.memory
-*/
+ * Mandatory:
+ * 
+ * vars.owncloud.image.name
+ * vars.owncloud.image.version
+ * vars.owncloud.php.memoryLimit_MB
+ * vars.owncloud.php.maxExecutionTime_s
+ * vars.owncloud.php.maxChildren
+ * vars.owncloud.php.startServers
+ * vars.owncloud.php.minSpareServers
+ * vars.owncloud.php.maxSpareServers
+ * vars.owncloud.php.opcacheEnable
+ * vars.owncloud.php.opcacheEnableCLI
+ * vars.owncloud.php.opcacheMemoryConsumption_MB
+ * vars.owncloud.limits.cpu
+ * vars.owncloud.limits.memory
+ * vars.owncloud.requests.cpu
+ * vars.owncloud.requests.memory
+ * vars.nginx.image.name
+ * vars.nginx.image.version
+ * vars.nginx.limits.cpu
+ * vars.nginx.limits.memory
+ * vars.nginx.requests.cpu
+ * vars.nginx.requests.memory
+ */
 
 import "affinities.stg"
 
@@ -213,41 +207,6 @@ spec:
           name: owncloud-owncloud-install
         - mountPath: /nginx-in
           name: nginx-nginx-config
-      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
-        name: rsync
-        env:
-        - name: RSYNC_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: rsync-passwords
-              key: user
-        - name: RSYNC_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: rsync-passwords
-              key: password
-        ports:
-        - containerPort: 8873
-          name: "rsync"
-        readinessProbe:
-          exec:
-            command:
-            - sh
-            - -i
-            - -s
-            - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/index.html /tmp/"
-          initialDelaySeconds: 60
-          timeoutSeconds: 10
-        resources:
-          limits:
-            cpu: <vars.rsync.limits.cpu>
-            memory: <vars.rsync.limits.memory>
-          requests:
-            cpu: <vars.rsync.requests.cpu>
-            memory: <vars.rsync.requests.memory>
-        volumeMounts:
-        - mountPath: /data
-          name: owncloud-owncloud-data
       restartPolicy: Always
       volumes:
       - name: owncloud-owncloud-install
