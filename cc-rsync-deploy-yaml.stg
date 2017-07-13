@@ -79,9 +79,9 @@ spec:
         readinessProbe:
           exec:
             command:
-            - sh
+            - /bin/sh
             - -i
-            - -s
+            - -c
             - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/index.html /tmp/"
           initialDelaySeconds: 60
           timeoutSeconds: 10
