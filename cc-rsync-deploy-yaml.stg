@@ -1,6 +1,6 @@
 /*
  * Mandatory:
- * 
+ *
  * vars.rsync.image.name
  * vars.rsync.image.version
  * vars.rsync.limits.cpu

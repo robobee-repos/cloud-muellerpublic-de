@@ -1,6 +1,6 @@
 /*
  * Mandatory:
- * 
+ *
  * vars.owncloud.image.name
  * vars.owncloud.image.version
  * vars.owncloud.php.memoryLimit_MB

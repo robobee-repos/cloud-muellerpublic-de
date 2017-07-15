@@ -1,11 +1,11 @@
 /*
-* Mandatory:
-* 
-* vars.db.limits.cpu
-* vars.db.limits.memory
-* vars.db.requests.cpu
-* vars.db.requests.memory
-*/
+ * Mandatory:
+ *
+ * vars.db.limits.cpu
+ * vars.db.limits.memory
+ * vars.db.requests.cpu
+ * vars.db.requests.memory
+ */
 
 import "maradns_probe.stg"
 import "affinities.stg"

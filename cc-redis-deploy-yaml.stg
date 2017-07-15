@@ -1,13 +1,13 @@
 /*
-* Mandatory:
-* 
-* vars.redis.image.name
-* vars.redis.image.version
-* vars.redis.limits.cpu
-* vars.redis.limits.memory
-* vars.redis.requests.cpu
-* vars.redis.requests.memory
-*/
+ * Mandatory:
+ *
+ * vars.redis.image.name
+ * vars.redis.image.version
+ * vars.redis.limits.cpu
+ * vars.redis.limits.memory
+ * vars.redis.requests.cpu
+ * vars.redis.requests.memory
+ */
 
 import "affinities.stg"
 
