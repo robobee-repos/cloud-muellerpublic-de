@@ -99,8 +99,8 @@ spec:
             - -i
             - -c
             - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/index.html /tmp/"
-          initialDelaySeconds: 60
-          timeoutSeconds: 10
+          initialDelaySeconds: 1
+          timeoutSeconds: 1
         resources:
           limits:
             cpu: <vars.rsync.limits.cpu>
