@@ -98,7 +98,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/index.html /tmp/"
+            - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/conf/my.cnf /tmp/"
           initialDelaySeconds: 1
           timeoutSeconds: 1
         resources:
