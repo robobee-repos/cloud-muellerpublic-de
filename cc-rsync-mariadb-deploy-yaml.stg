@@ -21,7 +21,7 @@ metadata:
   name: rsync-mariadb
   namespace: cloud-muellerpublic-de
   labels:
-    app: rsync
+    app: rsync-mariadb
     tier: backup
     group: cloud-muellerpublic-de
 spec:
@@ -30,7 +30,7 @@ spec:
     port: 8873
     targetPort: 8873
   selector:
-    app: rsync
+    app: rsync-mariadb
 
 ---
 
@@ -40,14 +40,14 @@ metadata:
   name: rsync-mariadb
   namespace: cloud-muellerpublic-de
   labels:
-    app: rsync
+    app: rsync-mariadb
     tier: backup
     group: cloud-muellerpublic-de
 spec:
   replicas: 0
   selector:
     matchLabels:
-      app: rsync
+      app: rsync-mariadb
       tier: backup
       group: cloud-muellerpublic-de
   strategy:
@@ -55,7 +55,7 @@ spec:
   template:
     metadata:
       labels:
-        app: rsync
+        app: rsync-mariadb
         tier: backup
         group: cloud-muellerpublic-de
     spec:
