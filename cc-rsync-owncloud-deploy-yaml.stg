@@ -11,16 +11,16 @@
 
 import "affinities.stg"
 
-cc-rsync-mariadb-deploy-yaml(parent, vars) ::= <<
+cc-rsync-owncloud-deploy-yaml(parent, vars) ::= <<
 
 ---
 
 apiVersion: v1
 kind: Secret
 metadata:
-  name: rsync-mariadb-passwords
+  name: rsync-owncloud-passwords
   labels:
-    app: rsync-mariadb
+    app: rsync-owncloud
     tier: backup
     group: cloud-muellerpublic-de
   namespace: cloud-muellerpublic-de
@@ -34,10 +34,10 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rsync-mariadb
+  name: rsync-owncloud
   namespace: cloud-muellerpublic-de
   labels:
-    app: rsync-mariadb
+    app: rsync-owncloud
     tier: backup
     group: cloud-muellerpublic-de
 spec:
@@ -46,24 +46,24 @@ spec:
     port: 8873
     targetPort: 8873
   selector:
-    app: rsync-mariadb
+    app: rsync-owncloud
 
 ---
 
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: rsync-mariadb
+  name: rsync-owncloud
   namespace: cloud-muellerpublic-de
   labels:
-    app: rsync-mariadb
+    app: rsync-owncloud
     tier: backup
     group: cloud-muellerpublic-de
 spec:
   replicas: 0
   selector:
     matchLabels:
-      app: rsync-mariadb
+      app: rsync-owncloud
       tier: backup
       group: cloud-muellerpublic-de
   strategy:
@@ -71,23 +71,23 @@ spec:
   template:
     metadata:
       labels:
-        app: rsync-mariadb
+        app: rsync-owncloud
         tier: backup
         group: cloud-muellerpublic-de
     spec:
       containers:
       - image: <vars.rsync.image.name>:<vars.rsync.image.version>
-        name: rsync-mariadb
+        name: rsync-owncloud
         env:
         - name: RSYNC_USERNAME
           valueFrom:
             secretKeyRef:
-              name: rsync-mariadb-passwords
+              name: rsync-owncloud-passwords
               key: user
         - name: RSYNC_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: rsync-mariadb-passwords
+              name: rsync-owncloud-passwords
               key: password
         ports:
         - containerPort: 8873
@@ -98,7 +98,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/ca.pem /tmp/"
+            - "rsync rsync://${RSYNC_USERNAME}@localhost:8873/data/data/index.html /tmp/"
           initialDelaySeconds: 60
           timeoutSeconds: 10
         resources:
@@ -110,12 +110,12 @@ spec:
             memory: <vars.rsync.requests.memory>
         volumeMounts:
         - mountPath: /data
-          name: mariadb-mariadb-data
+          name: owncloud-owncloud-data
       restartPolicy: Always
       volumes:
-      - name: mariadb-mariadb-data
+      - name: owncloud-owncloud-data
         persistentVolumeClaim:
-          claimName: mariadb-mariadb-data
+          claimName: owncloud-owncloud-data
 <affinitiesGroup(parent, vars)>
 
 ---
