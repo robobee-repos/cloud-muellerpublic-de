@@ -11,14 +11,14 @@
 
 import "affinities.stg"
 
-cc-rsync-deploy-yaml(parent, vars) ::= <<
+cc-rsync-mariadb-deploy-yaml(parent, vars) ::= <<
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: rsync
+  name: rsync-mariadb
   namespace: cloud-muellerpublic-de
   labels:
     app: rsync
@@ -37,14 +37,14 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: rsync
+  name: rsync-mariadb
   namespace: cloud-muellerpublic-de
   labels:
     app: rsync
     tier: backup
     group: cloud-muellerpublic-de
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: rsync
@@ -61,17 +61,17 @@ spec:
     spec:
       containers:
       - image: <vars.rsync.image.name>:<vars.rsync.image.version>
-        name: rsync
+        name: rsync-mariadb
         env:
         - name: RSYNC_USERNAME
           valueFrom:
             secretKeyRef:
-              name: rsync-passwords
+              name: rsync-mariadb-passwords
               key: user
         - name: RSYNC_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: rsync-passwords
+              name: rsync-mariadb-passwords
               key: password
         ports:
         - containerPort: 8873
