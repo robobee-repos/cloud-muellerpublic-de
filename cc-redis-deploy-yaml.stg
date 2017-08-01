@@ -10,6 +10,7 @@
  */
 
 import "affinities.stg"
+import "tolerations.stg"
 
 cc-redis-deploy-yaml(parent, vars) ::= <<
 
@@ -98,6 +99,7 @@ spec:
         persistentVolumeClaim:
           claimName: redis-redis-data
 <affinitiesGroup(parent, vars)>
+<tolerationsGroup(parent, vars)>
 
 ---
 
