@@ -120,7 +120,7 @@ data:
                 fastcgi_param modHeadersAvailable true; #Avoid sending the security headers twice
                 fastcgi_param front_controller_active true;
                 fastcgi_read_timeout 180; # increase default timeout e.g. for long running carddav/ caldav syncs with 1000+ entries
-                fastcgi_pass owncloud-php:9000;
+                fastcgi_pass localhost:9000;
                 fastcgi_intercept_errors on;
                 fastcgi_request_buffering off; #Available since NGINX 1.7.11
             }
@@ -155,7 +155,7 @@ data:
             }
             # php-fpm ping and status.
             location ~ ^/(phpstatus|ping)$ {
-                fastcgi_pass   owncloud-php:9000;
+                fastcgi_pass   localhost:9000;
                 fastcgi_index  index.php;
                 fastcgi_param PATH_TRANSLATED $document_root$fastcgi_script_name;
                 include        fastcgi_params;

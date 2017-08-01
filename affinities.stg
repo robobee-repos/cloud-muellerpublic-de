@@ -1,6 +1,7 @@
 /*
  *
  */
+
 affinitiesGroup(parent, vars) ::= <<
       affinity:
         nodeAffinity:
