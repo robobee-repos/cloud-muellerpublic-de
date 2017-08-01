@@ -9,6 +9,7 @@
 
 import "maradns_probe.stg"
 import "affinities.stg"
+import "tolerations.stg"
 
 cc-db-deploy-yaml(parent, vars) ::= <<
 
@@ -125,6 +126,7 @@ spec:
         persistentVolumeClaim:
           claimName: mariadb-mariadb-data
 <affinitiesGroup(parent, vars)>
+<tolerationsGroup(parent, vars)>
 
 ---
 

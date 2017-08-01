@@ -25,6 +25,7 @@
  */
 
 import "affinities.stg"
+import "tolerations.stg"
 
 cc-owncloud-deploy-yaml(parent, vars) ::= <<
 
@@ -219,6 +220,7 @@ spec:
         configMap:
           name: nginx
 <affinitiesGroup(parent, vars)>
+<tolerationsGroup(parent, vars)>
 
 ---
 
