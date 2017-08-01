@@ -10,6 +10,7 @@
  */
 
 import "affinities.stg"
+import "tolerations.stg"
 
 cc-rsync-owncloud-deploy-yaml(parent, vars) ::= <<
 
@@ -96,6 +97,7 @@ spec:
         persistentVolumeClaim:
           claimName: owncloud-owncloud-data
 <affinitiesGroup(parent, vars)>
+<tolerationsGroup(parent, vars)>
 
 ---
 

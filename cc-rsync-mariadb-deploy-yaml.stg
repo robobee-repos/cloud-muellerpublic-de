@@ -10,6 +10,7 @@
  */
 
 import "affinities.stg"
+import "tolerations.stg"
 
 cc-rsync-mariadb-deploy-yaml(parent, vars) ::= <<
 
@@ -96,6 +97,7 @@ spec:
         persistentVolumeClaim:
           claimName: mariadb-mariadb-data
 <affinitiesGroup(parent, vars)>
+<tolerationsGroup(parent, vars)>
 
 ---
 
