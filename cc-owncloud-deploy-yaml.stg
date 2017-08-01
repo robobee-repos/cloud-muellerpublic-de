@@ -196,6 +196,12 @@ spec:
             port: 8080
           initialDelaySeconds: 60
           periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
         resources:
           limits:
             cpu: <vars.nginx.limits.cpu>
