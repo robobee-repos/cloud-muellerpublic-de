@@ -61,7 +61,7 @@ spec:
         group: cloud-muellerpublic-de
     spec:
       containers:
-      - image: <vars.rsync.image.name>-priv:<vars.rsync.image.version>
+      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
         name: rsync-mariadb
         env:
         - name: RSYNC_AUTHORIZED_KEY
