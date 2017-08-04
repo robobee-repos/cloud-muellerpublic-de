@@ -81,7 +81,7 @@ spec:
             - -i
             - -c
             - "cd /home/rsync/.ssh; if [ ! -e known_hosts ]; then ssh-keyscan -p 2222 -H localhost > known_hosts; fi; rsync -v rsync@localhost:/data/data/ca.pem /tmp/"
-          initialDelaySeconds: 1
+          initialDelaySeconds: 5
           timeoutSeconds: 1
         resources:
           limits:
