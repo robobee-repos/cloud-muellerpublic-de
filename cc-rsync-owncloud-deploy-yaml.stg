@@ -67,8 +67,8 @@ spec:
         - name: RSYNC_AUTHORIZED_KEY
           valueFrom:
             secretKeyRef:
-              name: rsync-sshkey
-              key: sshkey
+              name: rsync-ssh
+              key: auth-key
         - name: USER
           value: "rsync"
         ports:
