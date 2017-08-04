@@ -69,6 +69,8 @@ spec:
             secretKeyRef:
               name: rsync-sshkey
               key: sshkey
+        - name: USER
+          value: "root"
         ports:
         - containerPort: 2222
           name: ssh
