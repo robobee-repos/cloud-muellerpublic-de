@@ -77,10 +77,8 @@ spec:
         readinessProbe:
           exec:
             command:
-            - /bin/sh
-            - -i
-            - -c
-            - "cd /home/rsync/.ssh; if [ ! -e known_hosts ]; then ssh-keyscan -p 2222 -H localhost > known_hosts; fi; rsync -v rsync@localhost:/data/data/ca.pem /tmp/"
+            - /readiness.sh
+            - /var/www/html/index.html
           initialDelaySeconds: 5
           timeoutSeconds: 1
         resources:
