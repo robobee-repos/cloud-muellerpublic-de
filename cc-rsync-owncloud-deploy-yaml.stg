@@ -91,7 +91,6 @@ spec:
         volumeMounts:
         - mountPath: /conf
           name: owncloud-owncloud-install
-        volumeMounts:
         - mountPath: /data
           name: owncloud-owncloud-data
       restartPolicy: Always
