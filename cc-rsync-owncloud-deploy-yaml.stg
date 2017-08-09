@@ -78,7 +78,7 @@ spec:
           exec:
             command:
             - /readiness.sh
-            - /var/www/html/index.html
+            - /data/data/index.html
           initialDelaySeconds: 5
           timeoutSeconds: 1
         resources:
@@ -89,10 +89,16 @@ spec:
             cpu: <vars.rsync.requests.cpu>
             memory: <vars.rsync.requests.memory>
         volumeMounts:
+        - mountPath: /conf
+          name: owncloud-owncloud-install
+        volumeMounts:
         - mountPath: /data
           name: owncloud-owncloud-data
       restartPolicy: Always
       volumes:
+      - name: owncloud-owncloud-install
+        persistentVolumeClaim:
+          claimName: owncloud-owncloud-install
       - name: owncloud-owncloud-data
         persistentVolumeClaim:
           claimName: owncloud-owncloud-data
