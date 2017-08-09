@@ -5,6 +5,7 @@
  * vars.db.limits.memory
  * vars.db.requests.cpu
  * vars.db.requests.memory
+ * vars.db.createDatabase
  */
 
 import "maradns_probe.stg"
@@ -91,21 +92,7 @@ spec:
             secretKeyRef:
               name: db
               key: root_password
-        - name: MARIADB_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: db
-              key: owncloud_db
-        - name: MARIADB_USER
-          valueFrom:
-            secretKeyRef:
-              name: db
-              key: owncloud_user
-        - name: MARIADB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db
-              key: owncloud_password
+<databaseUser(parent, vars)>
         ports:
         - containerPort: 3306
           name: "mysql"
@@ -130,4 +117,24 @@ spec:
 
 ---
 
+>>
+
+databaseUser(parent, vars) ::= <<
+<if(!vars.db.createDatabase)>
+        - name: MARIADB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_db
+        - name: MARIADB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_user
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db
+              key: owncloud_password
+<endif>
 >>
