@@ -70,7 +70,7 @@ spec:
               name: rsync-ssh
               key: auth-key
         - name: USER
-          value: "rsync"
+          value: "root"
         ports:
         - containerPort: 2222
           name: ssh
