@@ -191,11 +191,11 @@ spec:
         - containerPort: 8080
           name: "http"
         livenessProbe:
-          httpGet:
-            path: /ping
+          tcpSocket:
             port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
+          initialDelaySeconds: 5
+          periodSeconds: 60
+          timeoutSeconds: 10
         readinessProbe:
           httpGet:
             path: /ping
