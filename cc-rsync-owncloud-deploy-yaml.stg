@@ -91,10 +91,10 @@ spec:
         volumeMounts:
         - mountPath: /html
           name: cloud-muellerpublic-de
-          subPath: /html
+          subPath: html
         - mountPath: /data
           name: owncloud-owncloud-data
-          subPath: /data
+          subPath: data
       restartPolicy: Always
       volumes:
       - name: cloud-muellerpublic-de

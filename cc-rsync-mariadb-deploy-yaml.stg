@@ -91,7 +91,7 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: cloud-muellerpublic-de
-          subPath: /mariadb
+          subPath: mariadb
       restartPolicy: Always
       volumes:
       - name: cloud-muellerpublic-de

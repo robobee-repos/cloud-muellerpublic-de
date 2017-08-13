@@ -75,7 +75,7 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: cloud-muellerpublic-de
-          subPath: /redis
+          subPath: redis
       restartPolicy: Always
       volumes:
       - name: cloud-muellerpublic-de
