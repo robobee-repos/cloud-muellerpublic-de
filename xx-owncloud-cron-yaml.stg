@@ -75,7 +75,7 @@ spec:
                   key: owncloud_password
             volumeMounts:
             - mountPath: /var/www/html
-              name: owncloud-owncloud-install
+              name: cloud-muellerpublic-de
               subPath: /html
             - mountPath: /data
               name: cloud-muellerpublic-de
