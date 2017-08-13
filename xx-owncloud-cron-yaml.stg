@@ -76,10 +76,10 @@ spec:
             volumeMounts:
             - mountPath: /var/www/html
               name: cloud-muellerpublic-de
-              subPath: /html
+              subPath: html
             - mountPath: /data
               name: cloud-muellerpublic-de
-              subPath: /data
+              subPath: data
           volumes:
           - name: cloud-muellerpublic-de
             persistentVolumeClaim:
