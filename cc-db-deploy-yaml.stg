@@ -17,24 +17,6 @@ cc-db-deploy-yaml(parent, vars) ::= <<
 ---
 
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mariadb-mariadb-data
-  namespace: cloud-muellerpublic-de
-  labels:
-    app: mariadb
-    tier: backend
-    group: cloud-muellerpublic-de
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-
----
-
-apiVersion: v1
 kind: Service
 metadata:
   name: db
@@ -105,13 +87,14 @@ spec:
             memory: <vars.db.requests.memory>
         volumeMounts:
         - mountPath: /bitnami/mariadb
-          name: mariadb-mariadb-data
+          name: cloud-muellerpublic-de
+          subPath: /mariadb
 <readinessProbe(parent, vars)>
       restartPolicy: Always
       volumes:
-      - name: mariadb-mariadb-data
+      - name: cloud-muellerpublic-de
         persistentVolumeClaim:
-          claimName: mariadb-mariadb-data
+          claimName: cloud-muellerpublic-de
 <affinitiesGroup(parent, vars)>
 <tolerationsGroup(parent, vars)>
 

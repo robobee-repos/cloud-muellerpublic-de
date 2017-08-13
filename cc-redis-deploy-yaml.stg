@@ -17,24 +17,6 @@ cc-redis-deploy-yaml(parent, vars) ::= <<
 ---
 
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-redis-data
-  namespace: cloud-muellerpublic-de
-  labels:
-    app: redis
-    tier: backend
-    group: cloud-muellerpublic-de
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 1Gi
-
----
-
-apiVersion: v1
 kind: Service
 metadata:
   name: redis
@@ -92,12 +74,13 @@ spec:
             memory: <vars.redis.requests.memory>
         volumeMounts:
         - mountPath: /data
-          name: redis-redis-data
+          name: cloud-muellerpublic-de
+          subPath: /redis
       restartPolicy: Always
       volumes:
-      - name: redis-redis-data
+      - name: cloud-muellerpublic-de
         persistentVolumeClaim:
-          claimName: redis-redis-data
+          claimName: cloud-muellerpublic-de
 <affinitiesGroup(parent, vars)>
 <tolerationsGroup(parent, vars)>
 

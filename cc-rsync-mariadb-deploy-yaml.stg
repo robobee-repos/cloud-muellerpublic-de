@@ -90,12 +90,13 @@ spec:
             memory: <vars.rsync.requests.memory>
         volumeMounts:
         - mountPath: /data
-          name: mariadb-mariadb-data
+          name: cloud-muellerpublic-de
+          subPath: /mariadb
       restartPolicy: Always
       volumes:
-      - name: mariadb-mariadb-data
+      - name: cloud-muellerpublic-de
         persistentVolumeClaim:
-          claimName: mariadb-mariadb-data
+          claimName: cloud-muellerpublic-de
 <affinitiesGroup(parent, vars)>
 <tolerationsGroup(parent, vars)>
 

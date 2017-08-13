@@ -76,15 +76,14 @@ spec:
             volumeMounts:
             - mountPath: /var/www/html
               name: owncloud-owncloud-install
+              subPath: /html
             - mountPath: /data
-              name: owncloud-owncloud-data
+              name: cloud-muellerpublic-de
+              subPath: /data
           volumes:
-          - name: owncloud-owncloud-install
+          - name: cloud-muellerpublic-de
             persistentVolumeClaim:
-              claimName: owncloud-owncloud-install
-          - name: owncloud-owncloud-data
-            persistentVolumeClaim:
-              claimName: owncloud-owncloud-data
+              claimName: cloud-muellerpublic-de
           restartPolicy: OnFailure
 
 >>

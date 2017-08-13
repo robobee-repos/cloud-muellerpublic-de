@@ -1,0 +1,22 @@
+/*
+ * Mandatory:
+ *
+ * vars.volume.storage
+ */
+
+cc-pvc-yaml(parent, vars) ::= <<
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cloud-muellerpublic-de
+  namespace: cloud-muellerpublic-de
+  labels:
+    group: cloud-muellerpublic-de
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: <vars.volume.storage>
+
+>>
