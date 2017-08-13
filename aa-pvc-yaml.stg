@@ -4,7 +4,7 @@
  * vars.volume.storage
  */
 
-cc-pvc-yaml(parent, vars) ::= <<
+aa-pvc-yaml(parent, vars) ::= <<
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
