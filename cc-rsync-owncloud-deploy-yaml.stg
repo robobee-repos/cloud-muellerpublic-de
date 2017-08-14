@@ -13,9 +13,6 @@ import "affinities.stg"
 import "tolerations.stg"
 
 cc-rsync-owncloud-deploy-yaml(parent, vars) ::= <<
-
----
-
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -83,78 +80,5 @@ spec:
           claimName: cloud-muellerpublic-de
 <affinitiesGroup(parent, vars)>
 <tolerationsGroup(parent, vars)>
-
----
-
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: rsync-owncloud-old
-  namespace: cloud-muellerpublic-de
-  labels:
-    app: rsync-owncloud-old
-    tier: backup
-    group: cloud-muellerpublic-de
-spec:
-  replicas: 0
-  selector:
-    matchLabels:
-      app: rsync-owncloud-old
-      tier: backup
-      group: cloud-muellerpublic-de
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: rsync-owncloud-old
-        tier: backup
-        group: cloud-muellerpublic-de
-    spec:
-      containers:
-      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
-        name: rsync-owncloud-old
-        env:
-        - name: RSYNC_AUTHORIZED_KEY
-          valueFrom:
-            secretKeyRef:
-              name: rsync-ssh
-              key: auth-key
-        - name: USER
-          value: "root"
-        ports:
-        - containerPort: 2222
-          name: ssh
-        readinessProbe:
-          exec:
-            command:
-            - /readiness.sh
-            - /data/data/index.html
-          initialDelaySeconds: 5
-          timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: <vars.rsync.limits.cpu>
-            memory: <vars.rsync.limits.memory>
-          requests:
-            cpu: <vars.rsync.requests.cpu>
-            memory: <vars.rsync.requests.memory>
-        volumeMounts:
-        - mountPath: /conf
-          name: owncloud-owncloud-install
-        - mountPath: /data
-          name: owncloud-owncloud-data
-      restartPolicy: Always
-      volumes:
-      - name: owncloud-owncloud-install
-        persistentVolumeClaim:
-          claimName: owncloud-owncloud-install
-      - name: owncloud-owncloud-data
-        persistentVolumeClaim:
-          claimName: owncloud-owncloud-data
-<affinitiesGroup(parent, vars)>
-<tolerationsGroup(parent, vars)>
-
----
 
 >>
