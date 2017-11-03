@@ -3,15 +3,16 @@
  *
  * vars.owncloud.image.name
  * vars.owncloud.image.version
- * vars.owncloud.php.memoryLimit_MB
- * vars.owncloud.php.maxExecutionTime_s
+ * vars.owncloud.php.memoryLimit
+ * vars.owncloud.php.maxExecutionTime
  * vars.owncloud.php.maxChildren
  * vars.owncloud.php.startServers
  * vars.owncloud.php.minSpareServers
  * vars.owncloud.php.maxSpareServers
  * vars.owncloud.php.opcacheEnable
  * vars.owncloud.php.opcacheEnableCLI
- * vars.owncloud.php.opcacheMemoryConsumption_MB
+ * vars.owncloud.php.opcacheMemoryConsumption
+ * vars.owncloud.cron.schedule
  */
 
 xx-owncloud-cron-yaml(parent, vars) ::= <<
@@ -24,7 +25,7 @@ metadata:
     app: owncloud
     group: cloud-muellerpublic-de
 spec:
-  schedule: "*/15 * * * *"
+  schedule: "<vars.owncloud.cron.schedule>"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
@@ -40,10 +41,10 @@ spec:
             - -f
             - cron.php
             env:
-            - name: PHP_MEMORY_LIMIT_MB
-              value: "<vars.owncloud.php.memoryLimit_MB>"
+            - name: PHP_MEMORY_LIMIT
+              value: "<vars.owncloud.php.memoryLimit>"
             - name: PHP_MAX_EXECUTION_TIME
-              value: "<vars.owncloud.php.maxExecutionTime_s>"
+              value: "<vars.owncloud.php.maxExecutionTime>"
             - name: PHP_FPM_MAX_CHILDREN
               value: "<vars.owncloud.php.maxChildren>"
             - name: PHP_FPM_START_SERVERS
@@ -56,8 +57,8 @@ spec:
               value: "<vars.owncloud.php.opcacheEnable>"
             - name: PHP_OPCACHE_ENABLE_CLI
               value: "<vars.owncloud.php.opcacheEnableCLI>"
-            - name: PHP_OPCACHE_MEMORY_CONSUMPTION_MB
-              value: "<vars.owncloud.php.opcacheMemoryConsumption_MB>"
+            - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+              value: "<vars.owncloud.php.opcacheMemoryConsumption>"
             - name: DB_OWNCLOUD_DB
               valueFrom:
                 secretKeyRef:

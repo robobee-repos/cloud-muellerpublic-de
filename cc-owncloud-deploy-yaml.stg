@@ -3,7 +3,7 @@
  *
  * vars.owncloud.image.name
  * vars.owncloud.image.version
- * vars.owncloud.php.memoryLimit_MB
+ * vars.owncloud.php.memoryLimit
  * vars.owncloud.php.maxExecutionTime
  * vars.owncloud.php.maxChildren
  * vars.owncloud.php.startServers
@@ -11,7 +11,7 @@
  * vars.owncloud.php.maxSpareServers
  * vars.owncloud.php.opcacheEnable
  * vars.owncloud.php.opcacheEnableCLI
- * vars.owncloud.php.opcacheMemoryConsumption_MB
+ * vars.owncloud.php.opcacheMemoryConsumption
  * vars.owncloud.limits.cpu
  * vars.owncloud.limits.memory
  * vars.owncloud.requests.cpu
@@ -22,6 +22,14 @@
  * vars.nginx.limits.memory
  * vars.nginx.requests.cpu
  * vars.nginx.requests.memory
+ * 
+ * Optional:
+ * 
+ * vars.owncloud.affinityRequired
+ * vars.owncloud.allowOnMaster
+ * vars.owncloud.tolerations[].key
+ * vars.owncloud.tolerations[].value
+ * vars.owncloud.tolerations[].effect
  */
 
 import "affinities.stg"
@@ -98,8 +106,8 @@ spec:
       - image: <vars.owncloud.image.name>:<vars.owncloud.image.version>
         name: owncloud
         env:
-        - name: PHP_MEMORY_LIMIT_MB
-          value: "<vars.owncloud.php.memoryLimit_MB>"
+        - name: PHP_MEMORY_LIMIT
+          value: "<vars.owncloud.php.memoryLimit>"
         - name: PHP_MAX_EXECUTION_TIME
           value: "<vars.owncloud.php.maxExecutionTime>"
         - name: PHP_FPM_MAX_CHILDREN
@@ -114,8 +122,8 @@ spec:
           value: "<vars.owncloud.php.opcacheEnable>"
         - name: PHP_OPCACHE_ENABLE_CLI
           value: "<vars.owncloud.php.opcacheEnableCLI>"
-        - name: PHP_OPCACHE_MEMORY_CONSUMPTION_MB
-          value: "<vars.owncloud.php.opcacheMemoryConsumption_MB>"
+        - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+          value: "<vars.owncloud.php.opcacheMemoryConsumption>"
         - name: DB_OWNCLOUD_DB
           valueFrom:
             secretKeyRef:
@@ -189,8 +197,9 @@ spec:
       - name: nginx-nginx-config
         configMap:
           name: nginx
-<affinitiesGroup(parent, vars)>
-<tolerationsGroup(parent, vars)>
+<affinitiesGroup(parent, vars, vars.owncloud.affinityRequired)>
+<tolerationMaster(parent, vars, vars.owncloud.allowOnMaster)>
+<tolerationsGroup(parent, vars, vars.owncloud.tolerations, vars.owncloud.allowOnMaster)>
 
 ---
 

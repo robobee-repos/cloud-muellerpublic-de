@@ -5,7 +5,15 @@
  * vars.db.limits.memory
  * vars.db.requests.cpu
  * vars.db.requests.memory
+ * 
+ * Optional:
+ * 
  * vars.db.createDatabase
+ * vars.db.affinityRequired
+ * vars.db.allowOnMaster
+ * vars.db.tolerations[].key
+ * vars.db.tolerations[].value
+ * vars.db.tolerations[].effect
  */
 
 import "maradns_probe.stg"
@@ -95,8 +103,9 @@ spec:
       - name: cloud-muellerpublic-de
         persistentVolumeClaim:
           claimName: cloud-muellerpublic-de
-<affinitiesGroup(parent, vars)>
-<tolerationsGroup(parent, vars)>
+<affinitiesGroup(parent, vars, vars.db.affinityRequired)>
+<tolerationMaster(parent, vars, vars.db.allowOnMaster)>
+<tolerationsGroup(parent, vars, vars.db.tolerations, vars.db.allowOnMaster)>
 
 ---
 

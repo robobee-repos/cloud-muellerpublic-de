@@ -7,6 +7,14 @@
  * vars.redis.limits.memory
  * vars.redis.requests.cpu
  * vars.redis.requests.memory
+ * 
+ * Optional:
+ * 
+ * vars.redis.affinityRequired
+ * vars.redis.allowOnMaster
+ * vars.redis.tolerations[].key
+ * vars.redis.tolerations[].value
+ * vars.redis.tolerations[].effect
  */
 
 import "affinities.stg"
@@ -81,8 +89,9 @@ spec:
       - name: cloud-muellerpublic-de
         persistentVolumeClaim:
           claimName: cloud-muellerpublic-de
-<affinitiesGroup(parent, vars)>
-<tolerationsGroup(parent, vars)>
+<affinitiesGroup(parent, vars, vars.redis.affinityRequired)>
+<tolerationMaster(parent, vars, vars.redis.allowOnMaster)>
+<tolerationsGroup(parent, vars, vars.redis.tolerations, vars.redis.allowOnMaster)>
 
 ---
 

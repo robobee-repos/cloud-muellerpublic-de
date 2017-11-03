@@ -7,7 +7,6 @@
  * vars.nginx.clientMaxBodySize
  *
  */
-
 bb-nginx-config-yaml(parent, vars) ::= <<
 apiVersion: v1
 kind: ConfigMap
