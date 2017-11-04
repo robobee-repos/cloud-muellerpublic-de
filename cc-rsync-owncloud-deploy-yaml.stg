@@ -64,7 +64,7 @@ spec:
           exec:
             command:
             - /readiness.sh
-            - /data/data/index.html
+            - /html/version.php
           initialDelaySeconds: 5
           timeoutSeconds: 1
         resources:
