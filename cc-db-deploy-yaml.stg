@@ -69,7 +69,6 @@ spec:
       containers:
       - image: bitnami/mariadb:latest
         name: mariadb
-        command: ["bash"]
         env:
         - name: ALLOW_EMPTY_PASSWORD
           value: "no"
