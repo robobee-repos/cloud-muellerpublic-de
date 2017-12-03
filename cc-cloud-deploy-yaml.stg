@@ -1,0 +1,478 @@
+/*
+ * Mandatory:
+ *
+ * vars.cloud.image.name
+ * vars.cloud.image.version
+ * vars.cloud.php.memoryLimit
+ * vars.cloud.php.maxExecutionTime
+ * vars.cloud.php.maxChildren
+ * vars.cloud.php.startServers
+ * vars.cloud.php.minSpareServers
+ * vars.cloud.php.maxSpareServers
+ * vars.cloud.php.opcacheEnable
+ * vars.cloud.php.opcacheEnableCLI
+ * vars.cloud.php.opcacheMemoryConsumption
+ * vars.cloud.limits.cpu
+ * vars.cloud.limits.memory
+ * vars.cloud.requests.cpu
+ * vars.cloud.requests.memory
+ * vars.cloud.nginx.hosts
+ * vars.cloud.db.user
+ * vars.cloud.db.password
+ * vars.cloud.db.database
+ * vars.cloud.cron.schedule
+ * vars.nginx.image.name
+ * vars.nginx.image.version
+ * vars.nginx.limits.cpu
+ * vars.nginx.limits.memory
+ * vars.nginx.requests.cpu
+ * vars.nginx.requests.memory
+ * vars.nginx.workerProcesses
+ * vars.nginx.workerConnections
+ * vars.nginx.clientMaxBodySize
+ * vars.nginx.readTimeout
+ * vars.rsync.image.name
+ * vars.rsync.image.version
+ * vars.rsync.limits.cpu
+ * vars.rsync.limits.memory
+ * vars.rsync.requests.cpu
+ * vars.rsync.requests.memory
+ * 
+ * Optional:
+ * 
+ * vars.cloud.affinityRequired
+ * vars.cloud.allowOnMaster
+ * vars.cloud.tolerations[].key
+ * vars.cloud.tolerations[].value
+ * vars.cloud.tolerations[].effect
+ */
+
+import "_affinities.stg"
+import "_ingress_config.stg"
+import "_nginx_config.stg"
+import "_tolerations.stg"
+
+cc-cloud-deploy-yaml(parent, vars) ::= <<
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-db-r1
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+type: Opaque
+data:
+  user: <vars.cloud.db.user;format="base64">
+  password: <vars.cloud.db.password;format="base64">
+  database: <vars.cloud.db.database;format="base64">
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - name: "http"
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: cloud
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-nginx-r1
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nginx
+    tier: frontend
+    group: cloud-muellerpublic-de
+data:
+  nginx.conf: |
+    <nginxDefaults(parent, vars)>
+    http {
+        <nginxHttpDefaults(parent, vars)>
+        upstream backend {
+            server 127.0.0.1:9000 max_fails=3 fail_timeout=<vars.nginx.readTimeout>;
+        }
+        <nginxVirtualHosts(parent, vars, vars.cloud.nginx.hosts)>
+        server {
+            listen 8080 default_server;
+            listen [::]:8080 default_server;
+            server_name <first(vars.cloud.nginx.hosts)>;
+            root /var/www/html;
+            <nginxLocationFavicon(parent, vars)>
+            <nginxLocationRobots(parent, vars)>
+            <nginxHttpServerSecurityHeaders(parent, vars)>
+            location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
+                deny all;
+            }
+            location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) {
+                deny all;
+            }
+            location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|ocs-provider/.+)\.php(?:$|/) {
+                fastcgi_split_path_info ^(.+\.php)(/.*)$;
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param PATH_INFO $fastcgi_path_info;
+                fastcgi_param HTTPS off;
+                #Avoid sending the security headers twice
+                fastcgi_param modHeadersAvailable true;
+                fastcgi_param front_controller_active true;
+                fastcgi_pass php-handler;
+                fastcgi_intercept_errors on;
+                fastcgi_request_buffering off;
+            }
+            location ~ ^/(?:updater|ocs-provider)(?:$|/) {
+                try_files $uri/ =404;
+                index index.php;
+            }
+            # Adding the cache control header for js and css files
+            # Make sure it is BELOW the PHP block
+            location ~ \.(?:css|js|woff|svg|gif)$ {
+                try_files $uri /index.php$uri$is_args$args;
+                add_header Cache-Control "public, max-age=15778463";
+                # Add headers to serve security related headers (It is intended to
+                # have those duplicated to the ones above)
+                # Before enabling Strict-Transport-Security headers please read into
+                # this topic first.
+                # add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; preload;";
+                #
+                # WARNING: Only add the preload option once you read about
+                # the consequences in https://hstspreload.org/. This option
+                # will add the domain to a hardcoded list that is shipped
+                # in all major browsers and getting removed from this list
+                # could take several months.
+                add_header X-Content-Type-Options nosniff;
+                add_header X-XSS-Protection "1; mode=block";
+                add_header X-Robots-Tag none;
+                add_header X-Download-Options noopen;
+                add_header X-Permitted-Cross-Domain-Policies none;
+                # Optional: Don't log access to assets
+                access_log off;
+            }
+            location ~ \.(?:png|html|ttf|ico|jpg|jpeg)$ {
+                try_files $uri /index.php$uri$is_args$args;
+                # Optional: Don't log access to other assets
+                access_log off;
+            }
+        }
+    }
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud
+      tier: frontend
+      group: cloud-muellerpublic-de
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cloud
+        tier: frontend
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.cloud.image.name>:<vars.cloud.image.version>
+        name: cloud
+        env:
+        - name: PHP_MEMORY_LIMIT
+          value: "<vars.cloud.php.memoryLimit>"
+        - name: PHP_MAX_EXECUTION_TIME
+          value: "<vars.cloud.php.maxExecutionTime>"
+        - name: PHP_FPM_MAX_CHILDREN
+          value: "<vars.cloud.php.maxChildren>"
+        - name: PHP_FPM_START_SERVERS
+          value: "<vars.cloud.php.startServers>"
+        - name: PHP_FPM_MIN_SPARE_SERVERS
+          value: "<vars.cloud.php.minSpareServers>"
+        - name: PHP_FPM_MAX_SPARE_SERVERS
+          value: "<vars.cloud.php.maxSpareServers>"
+        - name: PHP_OPCACHE_ENABLE
+          value: "<vars.cloud.php.opcacheEnable>"
+        - name: PHP_OPCACHE_ENABLE_CLI
+          value: "<vars.cloud.php.opcacheEnableCLI>"
+        - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+          value: "<vars.cloud.php.opcacheMemoryConsumption>"
+        - name: NEXTCLOUD_DB_HOST
+          value: "db"
+        - name: NEXTCLOUD_DB_PORT
+          value: "5432"
+        - name: NEXTCLOUD_DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r1
+              key: cloud_db
+        - name: NEXTCLOUD_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r1
+              key: cloud_user
+        - name: NEXTCLOUD_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r1
+              key: cloud_password
+        ports:
+        - containerPort: 9000
+          name: "php"
+        resources:
+          limits:
+            cpu: <vars.cloud.limits.cpu>
+            memory: <vars.cloud.limits.memory>
+          requests:
+            cpu: <vars.cloud.requests.cpu>
+            memory: <vars.cloud.requests.memory>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: cloud-muellerpublic-de
+          subPath: html
+        - mountPath: /data
+          name: cloud-muellerpublic-de
+          subPath: data
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          timeoutSeconds: 10
+      - image: <vars.nginx.image.name>:<vars.nginx.image.version>
+        name: nginx
+        env:
+        - name: NGINX_HTTP_PORT
+          value: "8080"
+        ports:
+        - containerPort: 8080
+          name: "http"
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 60
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: <vars.nginx.limits.cpu>
+            memory: <vars.nginx.limits.memory>
+          requests:
+            cpu: <vars.nginx.requests.cpu>
+            memory: <vars.nginx.requests.memory>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: cloud-muellerpublic-de
+          subPath: html
+        - mountPath: /nginx-in
+          name: nginx-config
+      restartPolicy: Always
+      volumes:
+      - name: cloud-muellerpublic-de
+        persistentVolumeClaim:
+          claimName: cloud-muellerpublic-de
+      - name: nginx-config
+        configMap:
+          name: cloud-nginx-r1
+      <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
+      <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rsync-cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: rsync-cloud
+    tier: backup
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: rsync-cloud
+      tier: backup
+      group: cloud-muellerpublic-de
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rsync-cloud
+        tier: backup
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
+        name: rsync-cloud
+        env:
+        - name: RSYNC_AUTHORIZED_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rsync-ssh
+              key: auth-key
+        - name: USER
+          value: "root"
+        ports:
+        - containerPort: 2222
+          name: ssh
+        readinessProbe:
+          exec:
+            command:
+            - /readiness.sh
+            - /html/version.php
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: <vars.rsync.limits.cpu>
+            memory: <vars.rsync.limits.memory>
+          requests:
+            cpu: <vars.rsync.requests.cpu>
+            memory: <vars.rsync.requests.memory>
+        volumeMounts:
+        - mountPath: /html
+          name: cloud-muellerpublic-de
+          subPath: html
+        - mountPath: /data
+          name: cloud-muellerpublic-de
+          subPath: data
+      restartPolicy: Always
+      volumes:
+      - name: cloud-muellerpublic-de
+        persistentVolumeClaim:
+          claimName: cloud-muellerpublic-de
+      <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
+      <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
+
+---
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    group: cloud-muellerpublic-de
+spec:
+  schedule: "<vars.cloud.cron.schedule>"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - image: <vars.cloud.image.name>:<vars.cloud.image.version>
+            name: cloud
+            args:
+            - php
+            - -f
+            - cron.php
+            env:
+            - name: PHP_MEMORY_LIMIT
+              value: "<vars.cloud.php.memoryLimit>"
+            - name: PHP_MAX_EXECUTION_TIME
+              value: "<vars.cloud.php.maxExecutionTime>"
+            - name: PHP_FPM_MAX_CHILDREN
+              value: "<vars.cloud.php.maxChildren>"
+            - name: PHP_FPM_START_SERVERS
+              value: "<vars.cloud.php.startServers>"
+            - name: PHP_FPM_MIN_SPARE_SERVERS
+              value: "<vars.cloud.php.minSpareServers>"
+            - name: PHP_FPM_MAX_SPARE_SERVERS
+              value: "<vars.cloud.php.maxSpareServers>"
+            - name: PHP_OPCACHE_ENABLE
+              value: "<vars.cloud.php.opcacheEnable>"
+            - name: PHP_OPCACHE_ENABLE_CLI
+              value: "<vars.cloud.php.opcacheEnableCLI>"
+            - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+              value: "<vars.cloud.php.opcacheMemoryConsumption>"
+            - name: NEXTCLOUD_DB_HOST
+              value: "db"
+            - name: NEXTCLOUD_DB_PORT
+              value: "5432"
+            - name: NEXTCLOUD_DB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-db-r1
+                  key: cloud_db
+            - name: NEXTCLOUD_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-db-r1
+                  key: cloud_user
+            - name: NEXTCLOUD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-db-r1
+                  key: cloud_password
+            volumeMounts:
+            - mountPath: /var/www/html
+              name: cloud-muellerpublic-de
+              subPath: html
+            - mountPath: /data
+              name: cloud-muellerpublic-de
+              subPath: data
+          volumes:
+          - name: cloud-muellerpublic-de
+            persistentVolumeClaim:
+              claimName: cloud-muellerpublic-de
+          restartPolicy: OnFailure
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+  annotations:
+    <ingressDefaultAnnotations(parent, vars)>
+spec:
+  <ingressDefaultSpec(parent, vars, vars.cloud.nginx, "cloud")>
+
+---
+
+>>

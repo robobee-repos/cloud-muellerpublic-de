@@ -1,0 +1,222 @@
+/*
+ * Mandatory:
+ *
+ * vars.postgres.image.name
+ * vars.postgres.image.version
+ * vars.postgres.limits.cpu
+ * vars.postgres.limits.memory
+ * vars.postgres.requests.cpu
+ * vars.postgres.requests.memory
+ * vars.postgres.user
+ * vars.postgres.password
+ * vars.postgres.database
+ * vars.postgres.adminPassword
+ * vars.rsync.image.name
+ * vars.rsync.image.version
+ * vars.rsync.limits.cpu
+ * vars.rsync.limits.memory
+ * vars.rsync.requests.cpu
+ * vars.rsync.requests.memory
+ * 
+ * Optional:
+ * 
+ * vars.postgres.affinityRequired
+ * vars.postgres.tolerations[].key
+ * vars.postgres.tolerations[].effect
+ * vars.postgres.tolerations[].value
+ */
+
+import "_affinities.stg"
+import "_tolerations.stg"
+
+cc-postgres-deploy-yaml(parent, vars) ::= <<
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-r1
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: postgres
+    tier: backend
+    group: cloud-muellerpublic-de
+type: Opaque
+data:
+  user: <vars.postgres.user;format="base64">
+  password: <vars.postgres.password;format="base64">
+  database: <vars.postgres.database;format="base64">
+  admin_password: <vars.postgres.adminPassword;format="base64">
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: postgres
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: postgres
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: backend
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.postgres.image.name>:<vars.postgres.image.version>
+        name: postgres
+        ports:
+        - containerPort: 5432
+          name: "postgres"
+        env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-r1
+              key: user
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-r1
+              key: password
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: postgres-r1
+              key: database
+        - name: POSTGRESQL_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-r1
+              key: admin_password
+        resources:
+          limits:
+            cpu: <vars.postgres.limits.cpu>
+            memory: <vars.postgres.limits.memory>
+          requests:
+            cpu: <vars.postgres.requests.cpu>
+            memory: <vars.postgres.requests.memory>
+        readinessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 5
+          exec:
+            command:
+            - "/bin/sh"
+            - "-i"
+            - "-c"
+            - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'
+        livenessProbe:
+          timeoutSeconds: 1
+          initialDelaySeconds: 30
+          tcpSocket:
+            port: 5432
+        volumeMounts:
+        - name: pgdata
+          mountPath: "/pgdata"
+          subPath: "pgdata"
+      volumes:
+      - name: pgdata
+        persistentVolumeClaim:
+          claimName: cloud-muellerpublic-de
+      <affinitiesGroup(parent, vars, vars.postgres.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.postgres.allowOnMaster)>
+      <tolerations(parent, vars, vars.postgres.tolerations, vars.postgres.allowOnMaster)>
+
+---
+
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: rsync-postgres
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: rsync-postgres
+    tier: backup
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: rsync-postgres
+      tier: backup
+      group: cloud-muellerpublic-de
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rsync-postgres
+        tier: backup
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
+        name: rsync-postgres
+        env:
+        - name: RSYNC_AUTHORIZED_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rsync-ssh
+              key: auth-key
+        - name: USER
+          value: "root"
+        ports:
+        - containerPort: 2222
+          name: ssh
+        readinessProbe:
+          exec:
+            command:
+            - /readiness.sh
+            - /data/postgres-0/PG_VERSION
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: <vars.rsync.limits.cpu>
+            memory: <vars.rsync.limits.memory>
+          requests:
+            cpu: <vars.rsync.requests.cpu>
+            memory: <vars.rsync.requests.memory>
+        volumeMounts:
+        - mountPath: "/data"
+          subPath: "pgdata"
+          name: data
+      restartPolicy: Always
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: cloud-muellerpublic-de
+      <affinitiesGroup(parent, vars, vars.postgres.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.postgres.allowOnMaster)>
+      <tolerations(parent, vars, vars.postgres.tolerations, vars.postgres.allowOnMaster)>
+
+---
+
+>>
