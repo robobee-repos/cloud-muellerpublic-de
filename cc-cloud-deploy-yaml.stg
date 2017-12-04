@@ -228,6 +228,8 @@ spec:
           value: "<vars.cloud.php.minSpareServers>"
         - name: PHP_FPM_MAX_SPARE_SERVERS
           value: "<vars.cloud.php.maxSpareServers>"
+        - name: PHP_FPM_REQUEST_SLOWLOG_TIMEOUT
+          value: "<vars.cloud.php.slowlogTimeout>"
         - name: PHP_OPCACHE_ENABLE
           value: "<vars.cloud.php.opcacheEnable>"
         - name: PHP_OPCACHE_ENABLE_CLI
