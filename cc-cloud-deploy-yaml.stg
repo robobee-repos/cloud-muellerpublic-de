@@ -8,6 +8,7 @@
  * vars.cloud.php.startServers
  * vars.cloud.php.minSpareServers
  * vars.cloud.php.maxSpareServers
+ * vars.cloud.php.slowlogTimeout
  * vars.cloud.php.opcacheEnable
  * vars.cloud.php.opcacheEnableCLI
  * vars.cloud.php.opcacheMemoryConsumption
@@ -58,7 +59,7 @@ cc-cloud-deploy-yaml(parent, vars) ::= <<
 apiVersion: v1
 kind: Secret
 metadata:
-  name: cloud-db-r1
+  name: cloud-db-r2
   namespace: cloud-muellerpublic-de
   labels:
     app: cloud
@@ -69,6 +70,7 @@ data:
   user: <vars.cloud.db.user;format="base64">
   password: <vars.cloud.db.password;format="base64">
   database: <vars.cloud.db.database;format="base64">
+  admin_password: <vars.cloud.db.adminPassword;format="base64">
 
 ---
 
@@ -229,17 +231,17 @@ spec:
         - name: NEXTCLOUD_DB_DATABASE
           valueFrom:
             secretKeyRef:
-              name: cloud-db-r1
+              name: cloud-db-r2
               key: database
         - name: NEXTCLOUD_DB_USER
           valueFrom:
             secretKeyRef:
-              name: cloud-db-r1
+              name: cloud-db-r2
               key: user
         - name: NEXTCLOUD_DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: cloud-db-r1
+              name: cloud-db-r2
               key: password
         ports:
         - containerPort: 9000
@@ -419,6 +421,8 @@ spec:
               value: "<vars.cloud.php.minSpareServers>"
             - name: PHP_FPM_MAX_SPARE_SERVERS
               value: "<vars.cloud.php.maxSpareServers>"
+            - name: PHP_FPM_REQUEST_SLOWLOG_TIMEOUT
+              value: "<vars.cloud.php.slowlogTimeout>"
             - name: PHP_OPCACHE_ENABLE
               value: "<vars.cloud.php.opcacheEnable>"
             - name: PHP_OPCACHE_ENABLE_CLI
@@ -432,17 +436,17 @@ spec:
             - name: NEXTCLOUD_DB_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: cloud-db-r1
+                  name: cloud-db-r2
                   key: cloud_db
             - name: NEXTCLOUD_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: cloud-db-r1
+                  name: cloud-db-r2
                   key: cloud_user
             - name: NEXTCLOUD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cloud-db-r1
+                  name: cloud-db-r2
                   key: cloud_password
             volumeMounts:
             - mountPath: /var/www/html
@@ -472,6 +476,64 @@ metadata:
     <ingressDefaultAnnotations(parent, vars)>
 spec:
   <ingressDefaultSpec(parent, vars, vars.cloud.nginx, "cloud")>
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloud-db-setup
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: frontend
+    group: cloud-muellerpublic-de
+spec:
+  template:
+    metadata:
+      name: cloud-db-setup
+    spec:
+      containers:
+      - image: <vars.postgres.image.name>:<vars.postgres.image.version>
+        name: cloud-db-setup
+        env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r2
+              key: user
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r2
+              key: password
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r2
+              key: database
+        - name: POSTGRESQL_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-db-r2
+              key: admin_password
+        - name: PGHOST
+          value: "postgres"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          value: "postgres"
+        command:
+        - /bin/sh
+        - -i
+        - -c
+        - >
+          while ! PGPASSWORD=${POSTGRESQL_ADMIN_PASSWORD} psql "postgresql://postgres@postgres" -c "SELECT 1;"; do sleep 3; done;
+          PGPASSWORD=${POSTGRESQL_ADMIN_PASSWORD} createuser $POSTGRESQL_USER ;
+          PGPASSWORD=${POSTGRESQL_ADMIN_PASSWORD} createdb --owner=$POSTGRESQL_USER $POSTGRESQL_DATABASE ;
+          PGPASSWORD=${POSTGRESQL_ADMIN_PASSWORD} psql --command "ALTER USER \"${POSTGRESQL_USER}\" WITH ENCRYPTED PASSWORD '${POSTGRESQL_PASSWORD}';"
+      restartPolicy: Never
+  backoffLimit: 4
 
 ---
 
