@@ -229,7 +229,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: cloud-db-r1
-              key: db
+              key: database
         - name: NEXTCLOUD_DB_USER
           valueFrom:
             secretKeyRef:
