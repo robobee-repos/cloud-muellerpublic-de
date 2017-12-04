@@ -94,7 +94,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloud-nginx-r1
+  name: cloud-nginx-r2
   namespace: cloud-muellerpublic-de
   labels:
     app: nginx
@@ -132,7 +132,7 @@ data:
                 #Avoid sending the security headers twice
                 fastcgi_param modHeadersAvailable true;
                 fastcgi_param front_controller_active true;
-                fastcgi_pass php-handler;
+                fastcgi_pass backend;
                 fastcgi_intercept_errors on;
                 fastcgi_request_buffering off;
             }
@@ -303,7 +303,7 @@ spec:
           claimName: cloud-muellerpublic-de
       - name: nginx-config
         configMap:
-          name: cloud-nginx-r1
+          name: cloud-nginx-r2
       <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
       <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
       <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
