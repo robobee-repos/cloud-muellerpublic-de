@@ -8,7 +8,7 @@ affinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: muellerpublic.de/dev
+        - key: muellerpublic.de/web
           operator: In
           values:
           - required
@@ -17,7 +17,7 @@ affinity:
     - weight: 1
       preference:
         matchExpressions:
-        - key: muellerpublic.de/dev
+        - key: muellerpublic.de/web
           operator: In
           values:
           - preferred
