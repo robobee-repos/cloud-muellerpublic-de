@@ -94,7 +94,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloud-nginx-r2
+  name: cloud-nginx-r3
   namespace: cloud-muellerpublic-de
   labels:
     app: nginx
@@ -304,7 +304,7 @@ spec:
           claimName: cloud-muellerpublic-de
       - name: nginx-config
         configMap:
-          name: cloud-nginx-r2
+          name: cloud-nginx-r3
       <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
       <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
       <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
