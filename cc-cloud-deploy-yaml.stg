@@ -4,7 +4,6 @@
  * vars.cloud.image.name
  * vars.cloud.image.version
  * vars.cloud.php.memoryLimit
- * vars.cloud.php.maxExecutionTime
  * vars.cloud.php.maxChildren
  * vars.cloud.php.startServers
  * vars.cloud.php.minSpareServers
@@ -207,7 +206,7 @@ spec:
         - name: PHP_MEMORY_LIMIT
           value: "<vars.cloud.php.memoryLimit>"
         - name: PHP_MAX_EXECUTION_TIME
-          value: "<vars.cloud.php.maxExecutionTime>"
+          value: "<vars.nginx.readTimeout>"
         - name: PHP_FPM_MAX_CHILDREN
           value: "<vars.cloud.php.maxChildren>"
         - name: PHP_FPM_START_SERVERS
@@ -230,17 +229,17 @@ spec:
           valueFrom:
             secretKeyRef:
               name: cloud-db-r1
-              key: cloud_db
+              key: db
         - name: NEXTCLOUD_DB_USER
           valueFrom:
             secretKeyRef:
               name: cloud-db-r1
-              key: cloud_user
+              key: user
         - name: NEXTCLOUD_DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: cloud-db-r1
-              key: cloud_password
+              key: password
         ports:
         - containerPort: 9000
           name: "php"
