@@ -225,7 +225,7 @@ spec:
         - name: PHP_OPCACHE_MEMORY_CONSUMPTION
           value: "<vars.cloud.php.opcacheMemoryConsumption>"
         - name: NEXTCLOUD_DB_HOST
-          value: "db"
+          value: "postgres"
         - name: NEXTCLOUD_DB_PORT
           value: "5432"
         - name: NEXTCLOUD_DB_DATABASE
