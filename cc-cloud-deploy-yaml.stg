@@ -96,7 +96,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloud-nginx-r3
+  name: cloud-nginx-r4
   namespace: cloud-muellerpublic-de
   labels:
     app: nginx
@@ -115,11 +115,21 @@ data:
             listen 8080 default_server;
             listen [::]:8080 default_server;
             server_name <first(vars.cloud.nginx.hosts)>;
-            root /var/www/html;
+            root /var/www/html/;
             <nginxLocationFavicon(parent, vars)>
             <nginxLocationRobots(parent, vars)>
             <nginxHttpServerSecurityHeaders(parent, vars)>
             <nginxLocationPhpPing(parent, vars)>
+            fastcgi_buffers 64 4K;
+            location = /.well-known/carddav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+            location = /.well-known/caldav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+            location / {
+                rewrite ^ /index.php$uri;
+            }
             location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
                 deny all;
             }
@@ -306,7 +316,7 @@ spec:
           claimName: cloud-muellerpublic-de
       - name: nginx-config
         configMap:
-          name: cloud-nginx-r3
+          name: cloud-nginx-r4
       <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
       <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
       <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
