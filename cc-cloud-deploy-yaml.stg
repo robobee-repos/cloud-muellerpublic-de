@@ -117,6 +117,7 @@ data:
             <nginxLocationFavicon(parent, vars)>
             <nginxLocationRobots(parent, vars)>
             <nginxHttpServerSecurityHeaders(parent, vars)>
+            <nginxLocationPhpPing(parent, vars)>
             location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
                 deny all;
             }

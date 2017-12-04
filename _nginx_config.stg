@@ -168,6 +168,7 @@ location @empty {
 }
 >>
 
+
 /*
  *
  */
@@ -192,6 +193,15 @@ nginxLocationGitFiles(parent, vars) ::= <<
 ## Protect .git files.
 location ^~ /.git {
     return 404;
+}
+>>
+
+nginxLocationPhpPing(parent, vars) ::= <<
+# php-fpm ping and status.
+location ~ ^/(phpstatus|ping)$ {
+    fastcgi_pass   backend;
+    fastcgi_param PATH_TRANSLATED $document_root$fastcgi_script_name;
+    include        fastcgi_params;
 }
 >>
 
