@@ -93,6 +93,26 @@ spec:
 
 ---
 
+kind: Service
+apiVersion: v1
+metadata:
+  name: db
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+  type: ClusterIP
+
+---
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -237,7 +257,7 @@ spec:
         - name: PHP_OPCACHE_MEMORY_CONSUMPTION
           value: "<vars.cloud.php.opcacheMemoryConsumption>"
         - name: NEXTCLOUD_DB_HOST
-          value: "postgres"
+          value: "db"
         - name: NEXTCLOUD_DB_PORT
           value: "5432"
         - name: NEXTCLOUD_DB_DATABASE
@@ -449,22 +469,22 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_db
+                  key: database
             - name: NEXTCLOUD_DB_USER
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_user
+                  key: user
             - name: NEXTCLOUD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_password
+                  key: password
             volumeMounts:
-            - mountPath: /var/www/html
+            - mountPath: "/var/www/html"
               name: cloud-muellerpublic-de
               subPath: html
-            - mountPath: /data
+            - mountPath: "/data"
               name: cloud-muellerpublic-de
               subPath: data
           volumes:
@@ -530,7 +550,7 @@ spec:
               name: cloud-db-r2
               key: admin_password
         - name: PGHOST
-          value: "postgres"
+          value: "db"
         - name: PGPORT
           value: "5432"
         - name: PGUSER
