@@ -93,10 +93,30 @@ spec:
 
 ---
 
+kind: Service
+apiVersion: v1
+metadata:
+  name: db
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: cloud
+    tier: backend
+    group: cloud-muellerpublic-de
+spec:
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+  type: ClusterIP
+
+---
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloud-nginx-r3
+  name: cloud-nginx-r4
   namespace: cloud-muellerpublic-de
   labels:
     app: nginx
@@ -115,11 +135,21 @@ data:
             listen 8080 default_server;
             listen [::]:8080 default_server;
             server_name <first(vars.cloud.nginx.hosts)>;
-            root /var/www/html;
+            root /var/www/html/;
             <nginxLocationFavicon(parent, vars)>
             <nginxLocationRobots(parent, vars)>
             <nginxHttpServerSecurityHeaders(parent, vars)>
             <nginxLocationPhpPing(parent, vars)>
+            fastcgi_buffers 64 4K;
+            location = /.well-known/carddav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+            location = /.well-known/caldav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+            location / {
+                rewrite ^ /index.php$uri;
+            }
             location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
                 deny all;
             }
@@ -218,6 +248,8 @@ spec:
           value: "<vars.cloud.php.minSpareServers>"
         - name: PHP_FPM_MAX_SPARE_SERVERS
           value: "<vars.cloud.php.maxSpareServers>"
+        - name: PHP_FPM_REQUEST_SLOWLOG_TIMEOUT
+          value: "<vars.cloud.php.slowlogTimeout>"
         - name: PHP_OPCACHE_ENABLE
           value: "<vars.cloud.php.opcacheEnable>"
         - name: PHP_OPCACHE_ENABLE_CLI
@@ -225,7 +257,7 @@ spec:
         - name: PHP_OPCACHE_MEMORY_CONSUMPTION
           value: "<vars.cloud.php.opcacheMemoryConsumption>"
         - name: NEXTCLOUD_DB_HOST
-          value: "postgres"
+          value: "db"
         - name: NEXTCLOUD_DB_PORT
           value: "5432"
         - name: NEXTCLOUD_DB_DATABASE
@@ -306,7 +338,7 @@ spec:
           claimName: cloud-muellerpublic-de
       - name: nginx-config
         configMap:
-          name: cloud-nginx-r3
+          name: cloud-nginx-r4
       <affinitiesGroup(parent, vars, vars.cloud.affinityRequired)>
       <tolerationMaster(parent, vars, vars.cloud.allowOnMaster)>
       <tolerations(parent, vars, vars.cloud.tolerations, vars.cloud.allowOnMaster)>
@@ -437,22 +469,22 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_db
+                  key: database
             - name: NEXTCLOUD_DB_USER
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_user
+                  key: user
             - name: NEXTCLOUD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: cloud-db-r2
-                  key: cloud_password
+                  key: password
             volumeMounts:
-            - mountPath: /var/www/html
+            - mountPath: "/var/www/html"
               name: cloud-muellerpublic-de
               subPath: html
-            - mountPath: /data
+            - mountPath: "/data"
               name: cloud-muellerpublic-de
               subPath: data
           volumes:
@@ -518,7 +550,7 @@ spec:
               name: cloud-db-r2
               key: admin_password
         - name: PGHOST
-          value: "postgres"
+          value: "db"
         - name: PGPORT
           value: "5432"
         - name: PGUSER
