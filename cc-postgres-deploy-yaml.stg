@@ -139,7 +139,7 @@ spec:
             port: 5432
         volumeMounts:
         - name: pgdata
-          mountPath: "/pgdata"
+          mountPath: "/var/lib/pgsql/data"
           subPath: "pgdata"
       volumes:
       - name: pgdata
@@ -194,7 +194,7 @@ spec:
           exec:
             command:
             - /readiness.sh
-            - /data/postgres-0/PG_VERSION
+            - /data/userdata/PG_VERSION
           initialDelaySeconds: 5
           timeoutSeconds: 1
         resources:
