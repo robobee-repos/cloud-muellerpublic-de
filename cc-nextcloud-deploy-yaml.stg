@@ -58,13 +58,11 @@
  * vars.rsync.requests.memory
  */
 
-import "robobeerun-templates/_affinities.stg"
-import "robobeerun-templates/_cert_config.stg"
-import "robobeerun-templates/_ingress_config.stg"
-import "robobeerun-templates/_nginx_config.stg"
-import "robobeerun-templates/_nginx_probe.stg"
-import "robobeerun-templates/_tolerations.stg"
-import "robobeerun-templates/_resources.stg"
+import "robobeerun-templates/affinities.stg"
+import "robobeerun-templates/nginx_config.stg"
+import "robobeerun-templates/nginx_probe.stg"
+import "robobeerun-templates/tolerations.stg"
+import "robobeerun-templates/resources.stg"
 import "robobeerun-templates/mysql_init.stg"
 import "robobeerun-templates/tcp_probe.stg"
 
@@ -100,22 +98,22 @@ metadata:
     tier: frontend
 data:
   nginx.conf: |
-    <nginxDefaults(parent, vars)>
+    <nginxDefaults(vars.nginx)>
     http {
-        <nginxHttpDefaults(parent, vars)>
+        <nginxHttpDefaults(vars.nginx)>
         upstream backend {
             server 127.0.0.1:9000 max_fails=3 fail_timeout=<vars.nginx.readTimeout>;
         }
-        <nginxVirtualHosts(parent, vars, vars.nextcloud.nginx.hosts)>
+        <nginxVirtualHosts(vars.nextcloud.hosts)>
         server {
             listen 8080 default_server;
             listen [::]:8080 default_server;
-            server_name <first(vars.nextcloud.nginx.hosts)>;
+            server_name <first(vars.nextcloud.hosts)>;
             root /var/www/html/;
-            <nginxLocationFavicon(parent, vars)>
-            <nginxLocationRobots(parent, vars)>
-            <nginxHttpServerSecurityHeaders(parent, vars)>
-            <nginxLocationPhpPing(parent, vars)>
+            <nginxLocationFavicon()>
+            <nginxLocationRobots()>
+            <nginxHttpServerSecurityHeaders()>
+            <nginxLocationPhpPing()>
 
             rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
             rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json last;
@@ -242,9 +240,17 @@ spec:
               name: db-<vars.db.revision>
               key: password
         - name: MYSQL_HOST
-          value: "<vars.db.host>:<vars.db.port>"
-        - name: NEXTCLOUD_DB_PORT
-          value: "5432"
+          value: "<vars.db.host>"
+        - name: NEXTCLOUD_DATA_DIR
+          value: "/data"
+        - name: NEXTCLOUD_ADMIN_USER
+          value: "admin"
+        - name: NEXTCLOUD_ADMIN_PASSWORD
+          value: "admin1234"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_HOST_PORT
+          value: "6379"
         - name: PHP_MEMORY_LIMIT
           value: "<vars.nextcloud.php.memoryLimit>"
         - name: PHP_MAX_EXECUTION_TIME
@@ -269,7 +275,7 @@ spec:
         - containerPort: 9000
           name: "php"
         <tcpProbesPortGroup(vars.nextcloud, "php")>
-        <resourcesGroup(parent, vars, vars.nextcloud)>
+        <resourcesGroup(vars.nextcloud)>
         volumeMounts:
         - mountPath: /var/www/html
           name: data
@@ -285,8 +291,8 @@ spec:
         ports:
         - containerPort: 8080
           name: "http"
-        <nginxReadinessProbe(parent, vars, vars.nextcloud)>
-        <resourcesGroup(parent, vars, vars.nginx)>
+        <nginxReadinessProbe(vars.nextcloud)>
+        <resourcesGroup(vars.nginx)>
         volumeMounts:
         - mountPath: /var/www/html
           name: data
@@ -301,80 +307,9 @@ spec:
       - name: nginx-config
         configMap:
           name: nginx-config-<vars.nextcloud.revision>
-      <affinitiesGroup(parent, vars, vars.nextcloud.affinityRequired)>
-      <tolerationMaster(parent, vars, vars.nextcloud.allowOnMaster)>
-      <tolerations(parent, vars, vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
-
----
-
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: rsync-cloud
-  namespace: cloud-muellerpublic-de
-  labels:
-    app: rsync-cloud
-    tier: backup
-    group: cloud-muellerpublic-de
-spec:
-  replicas: 0
-  selector:
-    matchLabels:
-      app: rsync-cloud
-      tier: backup
-      group: cloud-muellerpublic-de
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: rsync-cloud
-        tier: backup
-        group: cloud-muellerpublic-de
-    spec:
-      containers:
-      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
-        name: rsync-cloud
-        env:
-        - name: RSYNC_AUTHORIZED_KEY
-          valueFrom:
-            secretKeyRef:
-              name: rsync-ssh
-              key: auth-key
-        - name: USER
-          value: "root"
-        ports:
-        - containerPort: 2222
-          name: ssh
-        readinessProbe:
-          exec:
-            command:
-            - /readiness.sh
-            - /html/version.php
-          initialDelaySeconds: 5
-          timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: <vars.rsync.limits.cpu>
-            memory: <vars.rsync.limits.memory>
-          requests:
-            cpu: <vars.rsync.requests.cpu>
-            memory: <vars.rsync.requests.memory>
-        volumeMounts:
-        - mountPath: /html
-          name: nextcloud-muellerpublic-de
-          subPath: html
-        - mountPath: /data
-          name: nextcloud-muellerpublic-de
-          subPath: data
-      restartPolicy: Always
-      volumes:
-      - name: nextcloud-muellerpublic-de
-        persistentVolumeClaim:
-          claimName: cloud-muellerpublic-de
-      <affinitiesGroup(parent, vars, vars.nextcloud.affinityRequired)>
-      <tolerationMaster(parent, vars, vars.nextcloud.allowOnMaster)>
-      <tolerations(parent, vars, vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
+      <affinitiesGroup(vars.nextcloud.affinity)>
+      <tolerationMasterGroup(vars.nextcloud.allowOnMaster)>
+      <tolerationsGroup(vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
 
 ---
 
@@ -434,6 +369,9 @@ spec:
             persistentVolumeClaim:
               claimName: <vars.volume.name>
           restartPolicy: OnFailure
+          <affinitiesGroup(vars.nextcloud.affinity)>
+          <tolerationMasterGroup(vars.nextcloud.allowOnMaster)>
+          <tolerationsGroup(vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
 
 ---
 
