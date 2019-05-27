@@ -19,6 +19,8 @@
 
 import "robobeerun-templates/affinities.stg"
 import "robobeerun-templates/tolerations.stg"
+import "robobeerun-templates/resources.stg"
+import "robobeerun-templates/tcp_probe.stg"
 
 cc-redis-deploy-yaml(parent, vars) ::= <<
 
@@ -65,7 +67,8 @@ spec:
         ports:
         - containerPort: 6379
           name: "redis"
-        <resourcesGroup(parent, vars, vars.redis)>
+        <resourcesGroup(vars.redis)>
+        <tcpProbesPortGroup(vars.redis, "redis")>
         volumeMounts:
         - mountPath: /data
           name: data
@@ -75,9 +78,9 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: <vars.volume.name>
-      <affinitiesGroup(parent, vars, vars.redis.affinityRequired)>
-      <tolerationMaster(parent, vars, vars.redis.allowOnMaster)>
-      <tolerations(parent, vars, vars.redis.tolerations, vars.redis.allowOnMaster)>
+      <affinitiesGroup(vars.redis.affinity)>
+      <tolerationMasterGroup(vars.redis.allowOnMaster)>
+      <tolerationsGroup(vars.redis.tolerations, vars.redis.allowOnMaster)>
 
 ---
 
