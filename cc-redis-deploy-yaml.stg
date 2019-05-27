@@ -60,6 +60,10 @@ spec:
       labels:
         app: redis
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
       - image: <vars.redis.image.name>:<vars.redis.image.version>
         name: redis
@@ -73,6 +77,8 @@ spec:
         - mountPath: /data
           name: data
           subPath: redis
+        securityContext:
+          allowPrivilegeEscalation: false
       restartPolicy: Always
       volumes:
       - name: data
