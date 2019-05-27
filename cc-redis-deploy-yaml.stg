@@ -3,13 +3,13 @@
  *
  * vars.redis.image.name
  * vars.redis.image.version
+ * 
+ * Optional:
+ * 
  * vars.redis.limits.cpu
  * vars.redis.limits.memory
  * vars.redis.requests.cpu
  * vars.redis.requests.memory
- * 
- * Optional:
- * 
  * vars.redis.affinityRequired
  * vars.redis.allowOnMaster
  * vars.redis.tolerations[].key
@@ -17,8 +17,8 @@
  * vars.redis.tolerations[].effect
  */
 
-import "_affinities.stg"
-import "_tolerations.stg"
+import "robobeerun-templates/affinities.stg"
+import "robobeerun-templates/tolerations.stg"
 
 cc-redis-deploy-yaml(parent, vars) ::= <<
 
@@ -31,8 +31,6 @@ metadata:
   namespace: cloud-muellerpublic-de
   labels:
     app: redis
-    tier: backend
-    group: cloud-muellerpublic-de
 spec:
   ports:
   - name: "redis"
@@ -50,21 +48,15 @@ metadata:
   namespace: cloud-muellerpublic-de
   labels:
     app: redis
-    tier: backend
-    group: cloud-muellerpublic-de
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: redis
-      tier: backend
-      group: cloud-muellerpublic-de
   template:
     metadata:
       labels:
         app: redis
-        tier: backend
-        group: cloud-muellerpublic-de
     spec:
       containers:
       - image: <vars.redis.image.name>:<vars.redis.image.version>
@@ -73,22 +65,16 @@ spec:
         ports:
         - containerPort: 6379
           name: "redis"
-        resources:
-          limits:
-            cpu: <vars.redis.limits.cpu>
-            memory: <vars.redis.limits.memory>
-          requests:
-            cpu: <vars.redis.requests.cpu>
-            memory: <vars.redis.requests.memory>
+        <resourcesGroup(parent, vars, vars.redis)>
         volumeMounts:
         - mountPath: /data
-          name: cloud-muellerpublic-de
+          name: data
           subPath: redis
       restartPolicy: Always
       volumes:
-      - name: cloud-muellerpublic-de
+      - name: data
         persistentVolumeClaim:
-          claimName: cloud-muellerpublic-de
+          claimName: <vars.volume.name>
       <affinitiesGroup(parent, vars, vars.redis.affinityRequired)>
       <tolerationMaster(parent, vars, vars.redis.allowOnMaster)>
       <tolerations(parent, vars, vars.redis.tolerations, vars.redis.allowOnMaster)>

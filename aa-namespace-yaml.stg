@@ -6,7 +6,5 @@ kind: Namespace
 apiVersion: v1
 metadata:
   name: cloud-muellerpublic-de
-  labels:
-    group: cloud-muellerpublic-de
 
 >>

@@ -1,0 +1,440 @@
+/*
+ * Mandatory:
+ *
+ * vars.nextcloud.image.name
+ * vars.nextcloud.image.version
+ * vars.nextcloud.revision
+ * vars.nextcloud.php.memoryLimit
+ * vars.nextcloud.php.maxChildren
+ * vars.nextcloud.php.startServers
+ * vars.nextcloud.php.minSpareServers
+ * vars.nextcloud.php.maxSpareServers
+ * vars.nextcloud.php.slowlogTimeout
+ * vars.nextcloud.php.opcacheEnable
+ * vars.nextcloud.php.opcacheEnableCLI
+ * vars.nextcloud.php.opcacheMemoryConsumption
+ * vars.nextcloud.cron.schedule
+ * vars.nextcloud.hosts[]
+ * 
+ * vars.db.host
+ *     The MySQL host, for example 'robobeerun-com-mariadb.robobeerun-com-mariadb.svc'.
+ * vars.db.port
+ *     The MySQL port, for example '3306'.
+ * 
+ * vars.nginx.image.name
+ * vars.nginx.image.version
+ * vars.nginx.workerProcesses
+ * vars.nginx.workerConnections
+ * vars.nginx.clientMaxBodySize
+ * vars.nginx.readTimeout
+ * 
+ * vars.rsync.image.name
+ * vars.rsync.image.version
+ * 
+ * Optional:
+ * 
+ * vars.nextcloud.limits.cpu
+ * vars.nextcloud.limits.memory
+ * vars.nextcloud.requests.cpu
+ * vars.nextcloud.requests.memory
+ * vars.nextcloud.affinityRequired
+ * vars.nextcloud.allowOnMaster
+ * vars.nextcloud.tolerations[].key
+ * vars.nextcloud.tolerations[].value
+ * vars.nextcloud.tolerations[].effect
+ * vars.nextcloud.livenessProbe.initialDelaySeconds
+ * vars.nextcloud.readinessProbe.initialDelaySeconds
+ * vars.nextcloud.httpHeaders[].name
+ * vars.nextcloud.httpHeaders[].value
+ * 
+ * vars.nginx.limits.cpu
+ * vars.nginx.limits.memory
+ * vars.nginx.requests.cpu
+ * vars.nginx.requests.memory
+ * 
+ * vars.rsync.limits.cpu
+ * vars.rsync.limits.memory
+ * vars.rsync.requests.cpu
+ * vars.rsync.requests.memory
+ */
+
+import "robobeerun-templates/_affinities.stg"
+import "robobeerun-templates/_cert_config.stg"
+import "robobeerun-templates/_ingress_config.stg"
+import "robobeerun-templates/_nginx_config.stg"
+import "robobeerun-templates/_nginx_probe.stg"
+import "robobeerun-templates/_tolerations.stg"
+import "robobeerun-templates/_resources.stg"
+import "robobeerun-templates/mysql_init.stg"
+import "robobeerun-templates/tcp_probe.stg"
+
+cc-nextcloud-deploy-yaml(parent, vars) ::= <<
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nextcloud
+    tier: frontend
+spec:
+  ports:
+  - name: "http"
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: nextcloud
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config-<vars.nextcloud.revision>
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nginx
+    tier: frontend
+data:
+  nginx.conf: |
+    <nginxDefaults(parent, vars)>
+    http {
+        <nginxHttpDefaults(parent, vars)>
+        upstream backend {
+            server 127.0.0.1:9000 max_fails=3 fail_timeout=<vars.nginx.readTimeout>;
+        }
+        <nginxVirtualHosts(parent, vars, vars.nextcloud.nginx.hosts)>
+        server {
+            listen 8080 default_server;
+            listen [::]:8080 default_server;
+            server_name <first(vars.nextcloud.nginx.hosts)>;
+            root /var/www/html/;
+            <nginxLocationFavicon(parent, vars)>
+            <nginxLocationRobots(parent, vars)>
+            <nginxHttpServerSecurityHeaders(parent, vars)>
+            <nginxLocationPhpPing(parent, vars)>
+
+            rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
+            rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json last;
+
+            rewrite ^/.well-known/webfinger /public.php?service=webfinger last;
+
+            location = /.well-known/carddav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+            location = /.well-known/caldav {
+              return 301 $scheme://$host/remote.php/dav;
+            }
+
+            fastcgi_buffers 64 4K;
+
+            location / {
+                rewrite ^ /index.php$request_uri;
+            }
+
+            location ~ ^\/(?:build|tests|config|lib|3rdparty|templates|data)\/ {
+                deny all;
+            }
+            location ~ ^\/(?:\.|autotest|occ|issue|indie|db_|console) {
+                deny all;
+            }
+
+            location ~ ^\/(?:index|remote|public|cron|core\/ajax\/update|status|ocs\/v[12]|updater\/.+|oc[ms]-provider\/.+)\.php(?:$|\/) {
+                fastcgi_split_path_info ^(.+?\.php)(\/.*|)$;
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param PATH_INFO $fastcgi_path_info;
+                fastcgi_param HTTPS on;
+                #Avoid sending the security headers twice
+                fastcgi_param modHeadersAvailable true;
+                fastcgi_param front_controller_active true;
+                fastcgi_pass php-handler;
+                fastcgi_intercept_errors on;
+                fastcgi_request_buffering off;
+            }
+
+            location ~ ^\/(?:updater|oc[ms]-provider)(?:$|\/) {
+                try_files $uri/ =404;
+                index index.php;
+            }
+
+            # Adding the cache control header for js and css files
+            # Make sure it is BELOW the PHP block
+            location ~ \.(?:css|js|woff2?|svg|gif)$ {
+                try_files $uri /index.php$request_uri;
+                add_header Cache-Control "public, max-age=15778463";
+                # Add headers to serve security related headers (It is intended to
+                # have those duplicated to the ones above)
+                # Before enabling Strict-Transport-Security headers please read into
+                # this topic first.
+                # add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; preload;";
+                #
+                # WARNING: Only add the preload option once you read about
+                # the consequences in https://hstspreload.org/. This option
+                # will add the domain to a hardcoded list that is shipped
+                # in all major browsers and getting removed from this list
+                # could take several months.
+                add_header X-Content-Type-Options nosniff;
+                add_header X-XSS-Protection "1; mode=block";
+                add_header X-Robots-Tag none;
+                add_header X-Download-Options noopen;
+                add_header X-Permitted-Cross-Domain-Policies none;
+                add_header Referrer-Policy no-referrer;
+
+                # Optional: Don't log access to assets
+                access_log off;
+            }
+
+            location ~ \.(?:png|html|ttf|ico|jpg|jpeg)$ {
+                try_files $uri /index.php$request_uri;
+                # Optional: Don't log access to other assets
+                access_log off;
+            }
+        }
+    }
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nextcloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nextcloud
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextcloud
+      tier: frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nextcloud
+        tier: frontend
+    spec:
+      initContainers:
+      <mysqlInitDbGroup(vars.db)>
+      containers:
+      - image: <vars.nextcloud.image.name>:<vars.nextcloud.image.version>
+        name: nextcloud
+        env:
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: db-<vars.db.revision>
+              key: database
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-<vars.db.revision>
+              key: user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-<vars.db.revision>
+              key: password
+        - name: MYSQL_HOST
+          value: "<vars.db.host>:<vars.db.port>"
+        - name: NEXTCLOUD_DB_PORT
+          value: "5432"
+        - name: PHP_MEMORY_LIMIT
+          value: "<vars.nextcloud.php.memoryLimit>"
+        - name: PHP_MAX_EXECUTION_TIME
+          value: "<vars.nginx.readTimeout>"
+        - name: PHP_FPM_MAX_CHILDREN
+          value: "<vars.nextcloud.php.maxChildren>"
+        - name: PHP_FPM_START_SERVERS
+          value: "<vars.nextcloud.php.startServers>"
+        - name: PHP_FPM_MIN_SPARE_SERVERS
+          value: "<vars.nextcloud.php.minSpareServers>"
+        - name: PHP_FPM_MAX_SPARE_SERVERS
+          value: "<vars.nextcloud.php.maxSpareServers>"
+        - name: PHP_FPM_REQUEST_SLOWLOG_TIMEOUT
+          value: "<vars.nextcloud.php.slowlogTimeout>"
+        - name: PHP_OPCACHE_ENABLE
+          value: "<vars.nextcloud.php.opcacheEnable>"
+        - name: PHP_OPCACHE_ENABLE_CLI
+          value: "<vars.nextcloud.php.opcacheEnableCLI>"
+        - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+          value: "<vars.nextcloud.php.opcacheMemoryConsumption>"
+        ports:
+        - containerPort: 9000
+          name: "php"
+        <tcpProbesPortGroup(vars.nextcloud, "php")>
+        <resourcesGroup(parent, vars, vars.nextcloud)>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: data
+          subPath: html
+        - mountPath: /data
+          name: data
+          subPath: data
+      - image: <vars.nginx.image.name>:<vars.nginx.image.version>
+        name: nginx
+        env:
+        - name: NGINX_HTTP_PORT
+          value: "8080"
+        ports:
+        - containerPort: 8080
+          name: "http"
+        <nginxReadinessProbe(parent, vars, vars.nextcloud)>
+        <resourcesGroup(parent, vars, vars.nginx)>
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: data
+          subPath: html
+        - mountPath: /nginx-in
+          name: nginx-config
+      restartPolicy: Always
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: <vars.volume.name>
+      - name: nginx-config
+        configMap:
+          name: nginx-config-<vars.nextcloud.revision>
+      <affinitiesGroup(parent, vars, vars.nextcloud.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.nextcloud.allowOnMaster)>
+      <tolerations(parent, vars, vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rsync-cloud
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: rsync-cloud
+    tier: backup
+    group: cloud-muellerpublic-de
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: rsync-cloud
+      tier: backup
+      group: cloud-muellerpublic-de
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rsync-cloud
+        tier: backup
+        group: cloud-muellerpublic-de
+    spec:
+      containers:
+      - image: <vars.rsync.image.name>:<vars.rsync.image.version>
+        name: rsync-cloud
+        env:
+        - name: RSYNC_AUTHORIZED_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rsync-ssh
+              key: auth-key
+        - name: USER
+          value: "root"
+        ports:
+        - containerPort: 2222
+          name: ssh
+        readinessProbe:
+          exec:
+            command:
+            - /readiness.sh
+            - /html/version.php
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: <vars.rsync.limits.cpu>
+            memory: <vars.rsync.limits.memory>
+          requests:
+            cpu: <vars.rsync.requests.cpu>
+            memory: <vars.rsync.requests.memory>
+        volumeMounts:
+        - mountPath: /html
+          name: nextcloud-muellerpublic-de
+          subPath: html
+        - mountPath: /data
+          name: nextcloud-muellerpublic-de
+          subPath: data
+      restartPolicy: Always
+      volumes:
+      - name: nextcloud-muellerpublic-de
+        persistentVolumeClaim:
+          claimName: cloud-muellerpublic-de
+      <affinitiesGroup(parent, vars, vars.nextcloud.affinityRequired)>
+      <tolerationMaster(parent, vars, vars.nextcloud.allowOnMaster)>
+      <tolerations(parent, vars, vars.nextcloud.tolerations, vars.nextcloud.allowOnMaster)>
+
+---
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: nextcloud-cron
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nextcloud-cron
+spec:
+  schedule: "<vars.nextcloud.cron.schedule>"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - image: <vars.nextcloud.image.name>:<vars.nextcloud.image.version>
+            name: nextcloud-cron
+            args:
+            - php
+            - -f
+            - cron.php
+            env:
+            - name: PHP_MEMORY_LIMIT
+              value: "<vars.nextcloud.php.memoryLimit>"
+            - name: PHP_MAX_EXECUTION_TIME
+              value: "<vars.nextcloud.php.maxExecutionTime>"
+            - name: PHP_FPM_MAX_CHILDREN
+              value: "<vars.nextcloud.php.maxChildren>"
+            - name: PHP_FPM_START_SERVERS
+              value: "<vars.nextcloud.php.startServers>"
+            - name: PHP_FPM_MIN_SPARE_SERVERS
+              value: "<vars.nextcloud.php.minSpareServers>"
+            - name: PHP_FPM_MAX_SPARE_SERVERS
+              value: "<vars.nextcloud.php.maxSpareServers>"
+            - name: PHP_FPM_REQUEST_SLOWLOG_TIMEOUT
+              value: "<vars.nextcloud.php.slowlogTimeout>"
+            - name: PHP_OPCACHE_ENABLE
+              value: "<vars.nextcloud.php.opcacheEnable>"
+            - name: PHP_OPCACHE_ENABLE_CLI
+              value: "<vars.nextcloud.php.opcacheEnableCLI>"
+            - name: PHP_OPCACHE_MEMORY_CONSUMPTION
+              value: "<vars.nextcloud.php.opcacheMemoryConsumption>"
+            volumeMounts:
+            - mountPath: "/var/www/html"
+              name: data
+              subPath: html
+            - mountPath: "/data"
+              name: data
+              subPath: data
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: <vars.volume.name>
+          restartPolicy: OnFailure
+
+---
+
+>>
