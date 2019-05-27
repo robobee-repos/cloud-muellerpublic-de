@@ -113,7 +113,7 @@ data:
             <nginxLocationFavicon()>
             <nginxLocationRobots()>
             <nginxHttpServerSecurityHeaders()>
-            <nginxLocationPhpPing()>
+            <nginxLocationPhpPingLocation()>
 
             rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
             rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json last;
