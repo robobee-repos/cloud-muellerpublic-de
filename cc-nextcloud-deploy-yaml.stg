@@ -101,7 +101,7 @@ data:
     <nginxDefaults(vars.nginx)>
     http {
         <nginxHttpDefaults(vars.nginx)>
-        upstream backend {
+        upstream php-handler {
             server 127.0.0.1:9000 max_fails=3 fail_timeout=<vars.nginx.readTimeout>;
         }
         <nginxVirtualHosts(vars.nextcloud.hosts)>
