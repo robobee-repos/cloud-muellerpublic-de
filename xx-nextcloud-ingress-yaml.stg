@@ -1,0 +1,47 @@
+/*
+ * Mandatory:
+ *
+ * vars.nextcloud.hosts[]
+ * vars.nextcloud.issuer
+ * vars.nginx.clientMaxBodySize
+ */
+
+import "robobeerun-templates/cert_config.stg"
+import "robobeerun-templates/ingress_config.stg"
+
+/*
+ * 
+ */
+xx-nextcloud-ingress-yaml(parent, vars) ::= <<
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cloud-muellerpublic-de
+  namespace: cloud-muellerpublic-de
+  labels:
+    app: nextcloud
+    tier: frontend
+  annotations:
+    <ingressDefaultAnnotations(vars.nginx)>
+spec:
+  <ingressDefaultSpec("cloud-muellerpublic-de", vars.nextcloud.hosts)>
+
+---
+
+<ingressService("cloud-muellerpublic-de", "nextcloud", "cloud-muellerpublic-de", vars.nginx)>
+
+---
+
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: cloud-muellerpublic-de
+  namespace: cloud-muellerpublic-de
+spec:
+  <certDefaultSpec("cloud-muellerpublic-de-tls", vars.nextcloud.hosts, vars.nextcloud.issuer)>
+
+---
+
+>>
