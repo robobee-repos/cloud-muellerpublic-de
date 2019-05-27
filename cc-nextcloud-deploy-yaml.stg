@@ -251,6 +251,22 @@ spec:
           value: "redis"
         - name: REDIS_HOST_PORT
           value: "6379"
+        - name: SMTP_HOST
+          value: "<vars.nextcloud.email.host>"
+        - name: SMTP_SECURE
+          value: "<vars.nextcloud.email.secure>"
+        - name: SMTP_PORT
+          value: "<vars.nextcloud.email.port>"
+        - name: SMTP_AUTHTYPE
+          value: "<vars.nextcloud.email.authType>"
+        - name: SMTP_NAME
+          value: "<vars.nextcloud.email.user>"
+        - name: SMTP_PASSWORD
+          value: "<vars.nextcloud.email.password>"
+        - name: MAIL_FROM_ADDRESS
+          value: "<vars.nextcloud.email.from>"
+        - name: MAIL_DOMAIN
+          value: "<vars.nextcloud.email.domain>"
         - name: PHP_MEMORY_LIMIT
           value: "<vars.nextcloud.php.memoryLimit>"
         - name: PHP_MAX_EXECUTION_TIME
